@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launch Extension</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header-section">
+            <div class="goal-header">
+                <h1 id="goalTitle">ApplyEngine GA</h1>
+                <button id="settingsBtn" class="icon-button">⚙️</button>
+            </div>
+            
+            <div class="countdown">
+                <div class="countdown-grid">
+                    <div class="countdown-item">
+                        <div id="days" class="countdown-number">67</div>
+                        <div class="countdown-label">DAYS</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div id="hours" class="countdown-number">20</div>
+                        <div class="countdown-label">HOURS</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div id="minutes" class="countdown-number">38</div>
+                        <div class="countdown-label">MINUTES</div>
+                    </div>
+                    <div class="countdown-item">
+                        <div id="seconds" class="countdown-number">33</div>
+                        <div class="countdown-label">SECONDS</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Matrix Section -->
+            <div class="activity-section">
+                <div class="activity-header">
+                    <h3>Daily Progress</h3>
+                    <span id="activityStats" class="activity-stats"></span>
+                </div>
+                <div id="activityMatrix" class="activity-matrix"></div>
+                <div id="activityTooltip" class="activity-tooltip"></div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="lists-container">
+                <div class="list">
+                    <div class="list-header">
+                        <h2>To-Do</h2>
+                        <button id="addTaskBtn" class="icon-button">+</button>
+                    </div>
+                    <div id="todoList" class="task-list"></div>
+                </div>
+                <div class="list">
+                    <div class="list-header">
+                        <h2>Done</h2>
+                    </div>
+                    <div id="doneList" class="task-list"></div>
+                </div>
+            </div>
+            <button id="prevList" class="panel-nav prev" aria-label="Show To-Do List">←</button>
+            <button id="nextList" class="panel-nav next" aria-label="Show Done List">→</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h2>Settings</h2>
+            <div class="form-group">
+                <label for="goalInput">Goal:</label>
+                <input type="text" id="goalInput" placeholder="Enter your goal">
+            </div>
+            <div class="form-group">
+                <label for="dateInput">Target Date:</label>
+                <input type="datetime-local" id="dateInput">
+            </div>
+            <div class="modal-buttons">
+                <button id="saveSettingsBtn" class="button">Save</button>
+                <button id="closeSettingsBtn" class="button secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <h2>Add Task</h2>
+            <div class="form-group">
+                <label for="taskInput">Task:</label>
+                <input type="text" id="taskInput" placeholder="Enter task">
+            </div>
+            <div class="form-group">
+                <label for="taskDescription">Description (optional):</label>
+                <textarea id="taskDescription" placeholder="Enter description"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button id="saveTaskBtn" class="button">Save</button>
+                <button id="closeTaskBtn" class="button secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html> 
