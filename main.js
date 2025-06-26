@@ -248,13 +248,17 @@ function updateTaskLists() {
     const sortedTasks = sortTasksByUpdated(state.tasks);
     const sortedDoneTasks = sortTasksByUpdated(state.doneTasks);
 
-    sortedTasks.forEach((task, index) => {
-        const taskElement = createTaskElement(task, index, false);
+    sortedTasks.forEach((task) => {
+        // Find original index in unsorted array
+        const originalIndex = state.tasks.findIndex(t => t === task);
+        const taskElement = createTaskElement(task, originalIndex, false);
         elements.todoList.appendChild(taskElement);
     });
 
-    sortedDoneTasks.forEach((task, index) => {
-        const taskElement = createTaskElement(task, index, true);
+    sortedDoneTasks.forEach((task) => {
+        // Find original index in unsorted array
+        const originalIndex = state.doneTasks.findIndex(t => t === task);
+        const taskElement = createTaskElement(task, originalIndex, true);
         elements.doneList.appendChild(taskElement);
     });
 }
