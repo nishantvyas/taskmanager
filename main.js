@@ -597,6 +597,10 @@ function generateActivityMatrix() {
     const endDate = new Date();
     const matrix = [];
     
+    // Adjust start date to previous Sunday to align weeks
+    const dayOfWeek = startDate.getDay();
+    startDate.setDate(startDate.getDate() - dayOfWeek);
+    
     // Generate all days from start to today
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
@@ -607,10 +611,28 @@ function generateActivityMatrix() {
             date: new Date(currentDate),
             dateStr: dateStr,
             count: tasksCompleted,
-            level: getActivityLevel(tasksCompleted)
+            level: getActivityLevel(tasksCompleted),
+            dayOfWeek: currentDate.getDay()
         });
         
         currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Pad with future dates to complete the last week
+    const lastDayOfWeek = endDate.getDay();
+    if (lastDayOfWeek < 6) {
+        const daysToAdd = 6 - lastDayOfWeek;
+        const paddingDate = new Date(endDate);
+        for (let i = 1; i <= daysToAdd; i++) {
+            paddingDate.setDate(paddingDate.getDate() + 1);
+            matrix.push({
+                date: new Date(paddingDate),
+                dateStr: formatDateToString(paddingDate),
+                count: 0,
+                level: 0,
+                dayOfWeek: paddingDate.getDay()
+            });
+        }
     }
     
     return matrix;

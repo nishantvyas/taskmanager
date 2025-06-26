@@ -871,11 +871,12 @@ button:hover {
 
 .activity-matrix {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(12px, 1fr));
-    gap: 2px;
+    grid-template-columns: repeat(7, 12px);  /* Fixed 7 columns for days of the week */
+    gap: 3px;  /* Consistent gap between squares */
     max-width: 100%;
     overflow-x: auto;
-    padding: 2px;
+    padding: 4px;
+    justify-content: flex-start;  /* Align to the start */
 }
 
 .matrix-day {
@@ -886,6 +887,7 @@ button:hover {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid var(--border);
     position: relative;
+    margin: 0;  /* Remove any margin */
 }
 
 .matrix-day:hover {
@@ -963,7 +965,7 @@ button:hover {
     border-bottom: 5px solid var(--background-primary);
 }
 
-/* Responsive adjustments for activity matrix */
+/* Update responsive styles for activity matrix */
 @media (max-width: 768px) {
     .activity-section {
         padding: 16px;
@@ -979,8 +981,8 @@ button:hover {
     }
     
     .activity-matrix {
-        grid-template-columns: repeat(auto-fill, minmax(10px, 1fr));
-        gap: 1px;
+        grid-template-columns: repeat(7, 10px);  /* Smaller squares on mobile */
+        gap: 2px;
     }
     
     .matrix-day {
