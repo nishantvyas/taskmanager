@@ -86,8 +86,10 @@ body {
 .list-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 1.5rem;
+    min-height: 48px; /* Ensure consistent height for both headers */
 }
 
 .list-header h2 {
