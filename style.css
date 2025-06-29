@@ -998,4 +998,26 @@ button:hover {
         font-size: 11px;
         padding: 6px 10px;
     }
+}
+
+/* Backup section styles */
+.backup-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.backup-section h3 {
+    font-size: 16px;
+    margin-bottom: 15px;
+    color: #fff;
+}
+
+.backup-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.backup-buttons .button {
+    flex: 1;
 } 

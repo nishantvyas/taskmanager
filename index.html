@@ -11,26 +11,26 @@
     <div class="container">
         <div class="header-section">
             <div class="goal-header">
-                <h1 id="goalTitle">ApplyEngine GA</h1>
+                <h1 id="goalTitle">Click to set your goal...</h1>
                 <button id="settingsBtn" class="icon-button">⚙️</button>
             </div>
             
             <div class="countdown">
                 <div class="countdown-grid">
                     <div class="countdown-item">
-                        <div id="days" class="countdown-number">67</div>
+                        <div id="days" class="countdown-number">--</div>
                         <div class="countdown-label">DAYS</div>
                     </div>
                     <div class="countdown-item">
-                        <div id="hours" class="countdown-number">20</div>
+                        <div id="hours" class="countdown-number">--</div>
                         <div class="countdown-label">HOURS</div>
                     </div>
                     <div class="countdown-item">
-                        <div id="minutes" class="countdown-number">38</div>
+                        <div id="minutes" class="countdown-number">--</div>
                         <div class="countdown-label">MINUTES</div>
                     </div>
                     <div class="countdown-item">
-                        <div id="seconds" class="countdown-number">33</div>
+                        <div id="seconds" class="countdown-number">--</div>
                         <div class="countdown-label">SECONDS</div>
                     </div>
                 </div>
@@ -79,6 +79,14 @@
             <div class="form-group">
                 <label for="dateInput">Target Date:</label>
                 <input type="datetime-local" id="dateInput">
+            </div>
+            <div class="form-group backup-section">
+                <h3>Backup & Restore</h3>
+                <div class="backup-buttons">
+                    <button id="exportBtn" class="button secondary">Export Data</button>
+                    <input type="file" id="importInput" accept=".json" style="display: none;">
+                    <button id="importBtn" class="button secondary">Import Data</button>
+                </div>
             </div>
             <div class="modal-buttons">
                 <button id="saveSettingsBtn" class="button">Save</button>

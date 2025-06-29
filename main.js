@@ -1,4 +1,23 @@
-import { differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds } from 'date-fns';
+// Native date difference functions
+function differenceInDays(endDate, startDate) {
+    const diffTime = endDate.getTime() - startDate.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+function differenceInHours(endDate, startDate) {
+    const diffTime = endDate.getTime() - startDate.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60));
+}
+
+function differenceInMinutes(endDate, startDate) {
+    const diffTime = endDate.getTime() - startDate.getTime();
+    return Math.floor(diffTime / (1000 * 60));
+}
+
+function differenceInSeconds(endDate, startDate) {
+    const diffTime = endDate.getTime() - startDate.getTime();
+    return Math.floor(diffTime / 1000);
+}
 
 // State management
 let state = {
@@ -585,6 +604,24 @@ function setupEventListeners() {
             closeSettings();
         }
     });
+
+    // Export button click handler
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportData);
+    }
+
+    // Import button click handler
+    const importBtn = document.getElementById('importBtn');
+    const importInput = document.getElementById('importInput');
+    if (importBtn && importInput) {
+        importBtn.addEventListener('click', () => importInput.click());
+        importInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                importData(e.target.files[0]);
+            }
+        });
+    }
 }
 
 // Activity Matrix Functions
@@ -768,6 +805,68 @@ function getCurrentStreak(matrix) {
     }
     
     return streak;
+}
+
+// Export data to JSON file
+function exportData() {
+    const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        data: {
+            goal: state.goal,
+            targetDate: state.targetDate ? state.targetDate.toISOString() : null,
+            goalCreatedAt: state.goalCreatedAt ? state.goalCreatedAt.toISOString() : null,
+            tasks: state.tasks,
+            doneTasks: state.doneTasks
+        }
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `launch-ext-backup-${formatDateToString(new Date())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Import data from JSON file
+async function importData(file) {
+    try {
+        const text = await file.text();
+        const importData = JSON.parse(text);
+        
+        // Validate import data structure
+        if (!importData.version || !importData.data) {
+            throw new Error('Invalid backup file format');
+        }
+
+        // Update state with imported data
+        state = {
+            goal: importData.data.goal || '',
+            targetDate: importData.data.targetDate ? new Date(importData.data.targetDate) : null,
+            goalCreatedAt: importData.data.goalCreatedAt ? new Date(importData.data.goalCreatedAt) : null,
+            tasks: Array.isArray(importData.data.tasks) ? importData.data.tasks : [],
+            doneTasks: Array.isArray(importData.data.doneTasks) ? importData.data.doneTasks : []
+        };
+
+        // Save imported state
+        await saveState();
+        
+        // Update UI
+        updateUI();
+        
+        // Close settings modal
+        closeSettings();
+        
+        // Show success message
+        alert('Data imported successfully!');
+    } catch (error) {
+        console.error('Import error:', error);
+        alert('Error importing data. Please make sure the file is a valid backup file.');
+    }
 }
 
 // Initialize the extension
