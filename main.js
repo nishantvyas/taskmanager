@@ -636,13 +636,10 @@ function updateActivityMatrix() {
 function generateActivityMatrix() {
     const startDate = getActivityStartDate();
     const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
     const matrix = [];
     
-    // Adjust start date to previous Sunday to align weeks
-    const dayOfWeek = startDate.getDay();
-    startDate.setDate(startDate.getDate() - dayOfWeek);
-    
-    // Generate all days from start to today
+    // Generate all days from start to today (continuous timeline, no week alignment)
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
         const dateStr = formatDateToString(currentDate);
@@ -657,23 +654,6 @@ function generateActivityMatrix() {
         });
         
         currentDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    // Pad with future dates to complete the last week
-    const lastDayOfWeek = endDate.getDay();
-    if (lastDayOfWeek < 6) {
-        const daysToAdd = 6 - lastDayOfWeek;
-        const paddingDate = new Date(endDate);
-        for (let i = 1; i <= daysToAdd; i++) {
-            paddingDate.setDate(paddingDate.getDate() + 1);
-            matrix.push({
-                date: new Date(paddingDate),
-                dateStr: formatDateToString(paddingDate),
-                count: 0,
-                level: 0,
-                dayOfWeek: paddingDate.getDay()
-            });
-        }
     }
     
     return matrix;
@@ -794,9 +774,24 @@ function updateActivityStats(matrix) {
 
 function getCurrentStreak(matrix) {
     let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = formatDateToString(today);
+    
+    // Find today's index in the matrix
+    let todayIndex = -1;
+    for (let i = matrix.length - 1; i >= 0; i--) {
+        if (matrix[i].dateStr === todayStr) {
+            todayIndex = i;
+            break;
+        }
+    }
+    
+    // If today is not found, no current streak
+    if (todayIndex === -1) return 0;
     
     // Count backwards from today to find current streak
-    for (let i = matrix.length - 1; i >= 0; i--) {
+    for (let i = todayIndex; i >= 0; i--) {
         if (matrix[i].count > 0) {
             streak++;
         } else {
