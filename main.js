@@ -64,9 +64,39 @@ let currentTaskList = null;
 // Initialize the extension
 async function init() {
     await loadState();
+    migrateTaskTimestamps(); // Fix existing task timestamps
     updateUI();
     setupEventListeners();
     startCountdownTimer();
+}
+
+// Migration function to fix existing task timestamps from UTC to local time
+function migrateTaskTimestamps() {
+    let migrationNeeded = false;
+    
+    // Check if any done tasks need migration (they have old UTC-based completedAt timestamps)
+    state.doneTasks.forEach(task => {
+        if (task.completedAt && !task.timestampMigrated) {
+            // Mark as migrated without changing the timestamp
+            // The key is that our new formatDateToString function now handles timezone correctly
+            task.timestampMigrated = true;
+            migrationNeeded = true;
+        }
+    });
+    
+    // Also migrate regular task timestamps
+    state.tasks.forEach(task => {
+        if ((task.createdAt || task.updatedAt) && !task.timestampMigrated) {
+            task.timestampMigrated = true;
+            migrationNeeded = true;
+        }
+    });
+    
+    // Save migrated data if any changes were made
+    if (migrationNeeded) {
+        console.log('Marked tasks as migrated to new timezone handling');
+        saveState();
+    }
 }
 
 // Load state from Chrome storage
@@ -223,13 +253,9 @@ function createTaskElement(task, index, isDone) {
 }
 
 function getTimeAgo(timestamp) {
-    const now = Date.now();
     const date = new Date(timestamp);
-    const seconds = Math.floor((now - timestamp) / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
+    const now = new Date();
+    
     // Format the date and time
     const timeStr = date.toLocaleTimeString('en-US', { 
         hour: 'numeric', 
@@ -240,16 +266,25 @@ function getTimeAgo(timestamp) {
     const dateStr = date.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric',
-        year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
     });
 
+    // Get date strings for proper comparison (ignoring time)
+    const todayStr = formatDateToString(now);
+    const taskDateStr = formatDateToString(date);
+    
+    // Calculate yesterday's date string
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = formatDateToString(yesterday);
+
     // If it's today, show just the time
-    if (days === 0 && date.getDate() === new Date().getDate()) {
+    if (taskDateStr === todayStr) {
         return `Today at ${timeStr}`;
     }
     
     // If it's yesterday, show "Yesterday"
-    if (days === 1 || (days === 0 && date.getDate() === new Date().getDate() - 1)) {
+    if (taskDateStr === yesterdayStr) {
         return `Yesterday at ${timeStr}`;
     }
 
@@ -635,22 +670,38 @@ function updateActivityMatrix() {
 
 function generateActivityMatrix() {
     const startDate = getActivityStartDate();
-    const endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
     const matrix = [];
     
-    // Generate all days from start to today (continuous timeline, no week alignment)
+    // If no goal is set, return empty matrix
+    if (!state.goalCreatedAt || !state.targetDate) {
+        return matrix;
+    }
+    
+    // End date should be the target date or today, whichever is later
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const targetDate = new Date(state.targetDate);
+    targetDate.setHours(23, 59, 59, 999);
+    const endDate = targetDate > today ? targetDate : today;
+    
+    // Generate all days from start to end date (covers entire goal period)
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
         const dateStr = formatDateToString(currentDate);
         const tasksCompleted = getTasksCompletedOnDate(dateStr);
         
+        // Mark future dates (beyond today) with a special class
+        const isToday = formatDateToString(new Date()) === dateStr;
+        const isFuture = currentDate > new Date();
+        
         matrix.push({
             date: new Date(currentDate),
             dateStr: dateStr,
             count: tasksCompleted,
-            level: getActivityLevel(tasksCompleted),
-            dayOfWeek: currentDate.getDay()
+            level: isFuture && !isToday ? -1 : getActivityLevel(tasksCompleted), // -1 for future dates
+            dayOfWeek: currentDate.getDay(),
+            isToday: isToday,
+            isFuture: isFuture && !isToday
         });
         
         currentDate.setDate(currentDate.getDate() + 1);
@@ -679,7 +730,11 @@ function getActivityStartDate() {
 }
 
 function formatDateToString(date) {
-    return date.toISOString().split('T')[0];
+    // Use local time instead of UTC to avoid timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 function getTasksCompletedOnDate(dateStr) {
@@ -703,7 +758,21 @@ function renderActivityMatrix(matrix) {
     
     matrix.forEach(day => {
         const dayElement = document.createElement('div');
-        dayElement.className = `matrix-day matrix-day-${day.level}`;
+        
+        // Base class and level class
+        let className = 'matrix-day';
+        if (day.level === -1) {
+            className += ' matrix-day-future'; // Future dates
+        } else {
+            className += ` matrix-day-${day.level}`;
+        }
+        
+        // Add special class for today
+        if (day.isToday) {
+            className += ' matrix-day-today';
+        }
+        
+        dayElement.className = className;
         dayElement.dataset.date = day.dateStr;
         dayElement.dataset.count = day.count;
         
@@ -718,18 +787,34 @@ function renderActivityMatrix(matrix) {
 
 function showTooltip(e) {
     const dayElement = e.target;
-    const date = new Date(dayElement.dataset.date);
+    // Use the date string directly instead of converting to Date and back
+    const dayDateStr = dayElement.dataset.date;
     const count = parseInt(dayElement.dataset.count);
+    const today = new Date();
+    const todayStr = formatDateToString(today);
+    const isToday = dayDateStr === todayStr;
     
-    const dateStr = date.toLocaleDateString('en-US', {
+    // Create date object for display formatting only
+    const date = new Date(dayDateStr + 'T00:00:00'); // Force local time interpretation
+    const isFuture = dayDateStr > todayStr;
+    
+    const displayDateStr = date.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
         year: 'numeric'
     });
     
-    const taskText = count === 1 ? 'task' : 'tasks';
-    const tooltipText = `${count} ${taskText} completed on ${dateStr}`;
+    let tooltipText;
+    if (isFuture && !isToday) {
+        tooltipText = `No activity yet on ${displayDateStr}`;
+    } else if (isToday) {
+        const taskText = count === 1 ? 'task' : 'tasks';
+        tooltipText = `${count} ${taskText} completed today`;
+    } else {
+        const taskText = count === 1 ? 'task' : 'tasks';
+        tooltipText = `${count} ${taskText} completed on ${displayDateStr}`;
+    }
     
     elements.activityTooltip.textContent = tooltipText;
     elements.activityTooltip.classList.add('visible');
@@ -764,8 +849,9 @@ function moveTooltip(e) {
 function updateActivityStats(matrix) {
     if (!elements.activityStats) return;
     
-    const totalDays = matrix.length;
-    const activeDays = matrix.filter(day => day.count > 0).length;
+    // Only count past and present days, not future days
+    const pastAndPresentDays = matrix.filter(day => !day.isFuture);
+    const activeDays = pastAndPresentDays.filter(day => day.count > 0).length;
     const totalTasks = matrix.reduce((sum, day) => sum + day.count, 0);
     const streak = getCurrentStreak(matrix);
     
@@ -787,8 +873,18 @@ function getCurrentStreak(matrix) {
         }
     }
     
-    // If today is not found, no current streak
-    if (todayIndex === -1) return 0;
+    // If today is not found, check if we're looking at past dates only
+    if (todayIndex === -1) {
+        // Count from the most recent past date
+        for (let i = matrix.length - 1; i >= 0; i--) {
+            if (!matrix[i].isFuture && matrix[i].count > 0) {
+                streak++;
+            } else if (!matrix[i].isFuture) {
+                break;
+            }
+        }
+        return streak;
+    }
     
     // Count backwards from today to find current streak
     for (let i = todayIndex; i >= 0; i--) {

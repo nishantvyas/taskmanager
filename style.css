@@ -846,7 +846,7 @@ button:hover {
     background: var(--background-secondary);
     border-radius: 12px;
     padding: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 8px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
 }
@@ -925,6 +925,16 @@ button:hover {
     border-color: #0f4419;
 }
 
+.matrix-day-future {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.matrix-day-today {
+    border: 2px solid #4CAF50 !important;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.4) !important;
+}
+
 .activity-tooltip {
     position: fixed;
     background: var(--background-primary);
@@ -972,7 +982,7 @@ button:hover {
 @media (max-width: 768px) {
     .activity-section {
         padding: 16px;
-        margin-bottom: 16px;
+        margin-bottom: 6px;
     }
     
     .activity-header h3 {
