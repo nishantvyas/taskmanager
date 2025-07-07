@@ -102,8 +102,21 @@ function migrateTaskTimestamps() {
 // Load state from Chrome storage
 async function loadState() {
     try {
-        const data = await chrome.storage.sync.get(['goalState']);
-        if (data.goalState) {
+        // Try new format first (split storage)
+        const data = await chrome.storage.sync.get(['goalState', 'tasks', 'doneTasks']);
+        
+        if (data.goalState && data.tasks && data.doneTasks) {
+            // New format
+            const loadedState = JSON.parse(data.goalState);
+            state = {
+                goal: loadedState.goal || '',
+                targetDate: loadedState.targetDate ? new Date(loadedState.targetDate) : null,
+                goalCreatedAt: loadedState.goalCreatedAt ? new Date(loadedState.goalCreatedAt) : null,
+                tasks: JSON.parse(data.tasks),
+                doneTasks: JSON.parse(data.doneTasks)
+            };
+        } else if (data.goalState) {
+            // Old format (single object) - migrate to new format
             const loadedState = JSON.parse(data.goalState);
             state = {
                 goal: loadedState.goal || '',
@@ -112,6 +125,21 @@ async function loadState() {
                 tasks: Array.isArray(loadedState.tasks) ? loadedState.tasks : [],
                 doneTasks: Array.isArray(loadedState.doneTasks) ? loadedState.doneTasks : []
             };
+            // Save in new format
+            await saveState();
+        } else {
+            // Try fallback to local storage
+            const localData = await chrome.storage.local.get(['goalState', 'tasks', 'doneTasks']);
+            if (localData.goalState && localData.tasks && localData.doneTasks) {
+                const loadedState = JSON.parse(localData.goalState);
+                state = {
+                    goal: loadedState.goal || '',
+                    targetDate: loadedState.targetDate ? new Date(loadedState.targetDate) : null,
+                    goalCreatedAt: loadedState.goalCreatedAt ? new Date(loadedState.goalCreatedAt) : null,
+                    tasks: JSON.parse(localData.tasks),
+                    doneTasks: JSON.parse(localData.doneTasks)
+                };
+            }
         }
     } catch (error) {
         console.error('Error loading state:', error);
@@ -130,13 +158,31 @@ async function loadState() {
 async function saveState() {
     try {
         const saveData = {
-            ...state,
+            goal: state.goal,
             targetDate: state.targetDate ? state.targetDate.toISOString() : null,
             goalCreatedAt: state.goalCreatedAt ? state.goalCreatedAt.toISOString() : null
         };
-        await chrome.storage.sync.set({ goalState: JSON.stringify(saveData) });
+        
+        // Split storage to avoid quota limits
+        const storageData = {
+            goalState: JSON.stringify(saveData),
+            tasks: JSON.stringify(state.tasks),
+            doneTasks: JSON.stringify(state.doneTasks)
+        };
+        
+        await chrome.storage.sync.set(storageData);
     } catch (error) {
         console.error('Error saving state:', error);
+        // Fallback to local storage if sync fails
+        try {
+            await chrome.storage.local.set({
+                goalState: JSON.stringify(saveData),
+                tasks: JSON.stringify(state.tasks),
+                doneTasks: JSON.stringify(state.doneTasks)
+            });
+        } catch (localError) {
+            console.error('Error saving to local storage:', localError);
+        }
     }
 }
 
