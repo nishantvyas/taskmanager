@@ -99,48 +99,86 @@ function migrateTaskTimestamps() {
     }
 }
 
+// Clean up old completed tasks to prevent storage bloat
+function cleanupOldTasks() {
+    if (!Array.isArray(state.doneTasks) || state.doneTasks.length <= 1000) {
+        return; // No cleanup needed
+    }
+    
+    const now = new Date();
+    const ninetyDaysAgo = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+    
+    // Keep tasks that are either:
+    // 1. From the last 90 days, OR
+    // 2. Among the 1000 most recent tasks
+    const sortedByDate = [...state.doneTasks].sort((a, b) => 
+        new Date(b.completedAt || b.updatedAt || b.createdAt) - new Date(a.completedAt || a.updatedAt || a.createdAt)
+    );
+    
+    // Keep the most recent 1000 tasks
+    const recentTasks = sortedByDate.slice(0, 1000);
+    
+    // Also keep any tasks from the last 90 days that weren't in the top 1000
+    const recentTaskIds = new Set(recentTasks.map(t => t.id));
+    const additionalRecentTasks = state.doneTasks.filter(task => {
+        if (recentTaskIds.has(task.id)) return false;
+        const taskDate = new Date(task.completedAt || task.updatedAt || task.createdAt);
+        return taskDate >= ninetyDaysAgo;
+    });
+    
+    const newDoneTasks = [...recentTasks, ...additionalRecentTasks];
+    
+    if (newDoneTasks.length < state.doneTasks.length) {
+        const removed = state.doneTasks.length - newDoneTasks.length;
+        console.log(`Cleaned up ${removed} old completed tasks`);
+        state.doneTasks = newDoneTasks;
+        saveState();
+    }
+}
+
 // Load state from Chrome storage
 async function loadState() {
     try {
-        // Try new format first (split storage)
-        const data = await chrome.storage.sync.get(['goalState', 'tasks', 'doneTasks']);
+        // Primary: Load from local storage (unlimited quota)
+        const localData = await chrome.storage.local.get(['goalState', 'tasks', 'doneTasks']);
         
-        if (data.goalState && data.tasks && data.doneTasks) {
-            // New format
-            const loadedState = JSON.parse(data.goalState);
+        if (localData.goalState) {
+            const loadedState = JSON.parse(localData.goalState);
             state = {
                 goal: loadedState.goal || '',
                 targetDate: loadedState.targetDate ? new Date(loadedState.targetDate) : null,
                 goalCreatedAt: loadedState.goalCreatedAt ? new Date(loadedState.goalCreatedAt) : null,
-                tasks: JSON.parse(data.tasks),
-                doneTasks: JSON.parse(data.doneTasks)
+                tasks: localData.tasks ? JSON.parse(localData.tasks) : [],
+                doneTasks: localData.doneTasks ? JSON.parse(localData.doneTasks) : []
             };
-        } else if (data.goalState) {
-            // Old format (single object) - migrate to new format
-            const loadedState = JSON.parse(data.goalState);
-            state = {
-                goal: loadedState.goal || '',
-                targetDate: loadedState.targetDate ? new Date(loadedState.targetDate) : null,
-                goalCreatedAt: loadedState.goalCreatedAt ? new Date(loadedState.goalCreatedAt) : null,
-                tasks: Array.isArray(loadedState.tasks) ? loadedState.tasks : [],
-                doneTasks: Array.isArray(loadedState.doneTasks) ? loadedState.doneTasks : []
-            };
-            // Save in new format
-            await saveState();
         } else {
-            // Try fallback to local storage
-            const localData = await chrome.storage.local.get(['goalState', 'tasks', 'doneTasks']);
-            if (localData.goalState && localData.tasks && localData.doneTasks) {
-                const loadedState = JSON.parse(localData.goalState);
-                state = {
-                    goal: loadedState.goal || '',
-                    targetDate: loadedState.targetDate ? new Date(loadedState.targetDate) : null,
-                    goalCreatedAt: loadedState.goalCreatedAt ? new Date(loadedState.goalCreatedAt) : null,
-                    tasks: JSON.parse(localData.tasks),
-                    doneTasks: JSON.parse(localData.doneTasks)
-                };
-            }
+            // Fallback: Try sync storage for migration
+            const syncData = await chrome.storage.sync.get(['goalState', 'tasks', 'doneTasks']);
+                         if (syncData.goalState) {
+                 const loadedState = JSON.parse(syncData.goalState);
+                 state = {
+                     goal: loadedState.goal || '',
+                     targetDate: loadedState.targetDate ? new Date(loadedState.targetDate) : null,
+                     goalCreatedAt: loadedState.goalCreatedAt ? new Date(loadedState.goalCreatedAt) : null,
+                     tasks: syncData.tasks ? JSON.parse(syncData.tasks) : (loadedState.tasks || []),
+                     doneTasks: syncData.doneTasks ? JSON.parse(syncData.doneTasks) : (loadedState.doneTasks || [])
+                 };
+                 // Migrate to local storage
+                 await saveState();
+                 
+                 // Clear old sync storage data to free up quota
+                 try {
+                     await chrome.storage.sync.remove(['goalState', 'tasks', 'doneTasks']);
+                     console.log('Cleared old sync storage data after migration');
+                 } catch (clearError) {
+                     console.log('Could not clear old sync storage:', clearError);
+                 }
+             }
         }
+        
+        // Clean up old completed tasks (keep last 1000 or 90 days worth)
+        cleanupOldTasks();
+        
     } catch (error) {
         console.error('Error loading state:', error);
         // Initialize with default state if loading fails
@@ -156,33 +194,28 @@ async function loadState() {
 
 // Save state to Chrome storage
 async function saveState() {
+    const saveData = {
+        goal: state.goal,
+        targetDate: state.targetDate ? state.targetDate.toISOString() : null,
+        goalCreatedAt: state.goalCreatedAt ? state.goalCreatedAt.toISOString() : null
+    };
+    
     try {
-        const saveData = {
-            goal: state.goal,
-            targetDate: state.targetDate ? state.targetDate.toISOString() : null,
-            goalCreatedAt: state.goalCreatedAt ? state.goalCreatedAt.toISOString() : null
-        };
+        // Primary: Save to local storage (unlimited quota)
+        await chrome.storage.local.set({ goalState: JSON.stringify(saveData) });
+        await chrome.storage.local.set({ tasks: JSON.stringify(state.tasks) });
+        await chrome.storage.local.set({ doneTasks: JSON.stringify(state.doneTasks) });
         
-        // Split storage to avoid quota limits
-        const storageData = {
-            goalState: JSON.stringify(saveData),
-            tasks: JSON.stringify(state.tasks),
-            doneTasks: JSON.stringify(state.doneTasks)
-        };
-        
-        await chrome.storage.sync.set(storageData);
-    } catch (error) {
-        console.error('Error saving state:', error);
-        // Fallback to local storage if sync fails
+        // Backup: Save only goal settings to sync storage (small data)
         try {
-            await chrome.storage.local.set({
-                goalState: JSON.stringify(saveData),
-                tasks: JSON.stringify(state.tasks),
-                doneTasks: JSON.stringify(state.doneTasks)
-            });
-        } catch (localError) {
-            console.error('Error saving to local storage:', localError);
+            await chrome.storage.sync.set({ goalSettings: JSON.stringify(saveData) });
+        } catch (syncError) {
+            // Sync storage quota exceeded - this is fine, local storage is primary
+            console.log('Sync storage backup skipped (quota limit)');
         }
+    } catch (error) {
+        console.error('Error saving to local storage:', error);
+        throw error; // Re-throw since local storage should not fail
     }
 }
 
