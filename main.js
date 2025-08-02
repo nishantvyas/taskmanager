@@ -45,6 +45,7 @@ const elements = {
     taskInput: document.getElementById('taskInput'),
     taskDescription: document.getElementById('taskDescription'),
     saveTaskBtn: document.getElementById('saveTaskBtn'),
+    deleteTaskBtn: document.getElementById('deleteTaskBtn'),
     closeTaskBtn: document.getElementById('closeTaskBtn'),
     goalInput: document.getElementById('goalInput'),
     dateInput: document.getElementById('dateInput'),
@@ -408,6 +409,15 @@ function openTaskDetails(task = null, index = null, isDone = false) {
         elements.taskDescription.value = '';
     }
     
+    // Show/hide delete button - only show for existing todo items
+    if (elements.deleteTaskBtn) {
+        if (currentTaskIndex !== null && !isDone) {
+            elements.deleteTaskBtn.style.display = 'inline-block';
+        } else {
+            elements.deleteTaskBtn.style.display = 'none';
+        }
+    }
+    
     elements.taskModal.classList.add('show');
     setTimeout(() => elements.taskInput.focus(), 100);
 }
@@ -509,6 +519,8 @@ function handleDrop(e) {
         if (taskList.id === 'doneList') {
             task.completedAt = Date.now();
             task.updatedAt = Date.now();
+            // Trigger confetti when task is completed
+            triggerConfetti();
         } else if (taskList.id === 'todoList') {
             // Remove completion timestamp when moving back to todo
             delete task.completedAt;
@@ -569,6 +581,8 @@ function moveTask(taskElement, fromList, toList) {
         // Add completion timestamp when moving to done list
         if (toList === 'done') {
             updatedTask.completedAt = Date.now();
+            // Trigger confetti when task is completed
+            triggerConfetti();
         } else if (toList === 'todo') {
             // Remove completion timestamp when moving back to todo
             delete updatedTask.completedAt;
@@ -668,6 +682,7 @@ function setupEventListeners() {
     // Existing event listeners
     elements.addTaskBtn.addEventListener('click', () => openTaskDetails());
     elements.saveTaskBtn.addEventListener('click', saveTask);
+    elements.deleteTaskBtn.addEventListener('click', deleteTask);
     elements.closeTaskBtn.addEventListener('click', closeTaskModal);
     
     elements.settingsBtn.addEventListener('click', openSettings);
@@ -1037,6 +1052,78 @@ async function importData(file) {
         console.error('Import error:', error);
         alert('Error importing data. Please make sure the file is a valid backup file.');
     }
+}
+
+// Firecracker burst animation
+function triggerConfetti() {
+    const confettiContainer = document.createElement('div');
+    confettiContainer.className = 'confetti-container';
+    document.body.appendChild(confettiContainer);
+    
+    const colors = ['#ff6b6b', '#ff9500', '#ffdd00', '#4ecdc4', '#45b7d1', '#eb4d4b', '#6c5ce7', '#a29bfe'];
+    const sparkColors = ['#ffff00', '#ffffff', '#ff8800', '#ff4444'];
+    
+    // Create main burst particles - BIGGER EXPLOSION!
+    for (let i = 0; i < 60; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        
+        // Random angle for explosion
+        const angle = (Math.PI * 2 * i) / 60;
+        const velocity = 200 + Math.random() * 300; // Much bigger burst radius
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        
+        confetti.style.backgroundColor = color;
+        confetti.style.setProperty('--burst-x', Math.cos(angle) * velocity + 'px');
+        confetti.style.setProperty('--burst-y', Math.sin(angle) * velocity + 'px');
+        confetti.style.animationDelay = Math.random() * 0.15 + 's';
+        confetti.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+        
+        confettiContainer.appendChild(confetti);
+    }
+    
+    // Create secondary burst ring for even bigger effect
+    for (let i = 0; i < 40; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti secondary';
+        
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 150 + Math.random() * 200;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        
+        confetti.style.backgroundColor = color;
+        confetti.style.setProperty('--burst-x', Math.cos(angle) * velocity + 'px');
+        confetti.style.setProperty('--burst-y', Math.sin(angle) * velocity + 'px');
+        confetti.style.animationDelay = (0.1 + Math.random() * 0.2) + 's';
+        confetti.style.animationDuration = (2.5 + Math.random() * 1) + 's';
+        
+        confettiContainer.appendChild(confetti);
+    }
+    
+    // Create sparks for more firecracker effect - MORE SPARKS!
+    for (let i = 0; i < 80; i++) {
+        const spark = document.createElement('div');
+        spark.className = 'spark';
+        
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 100 + Math.random() * 250; // Bigger spark range
+        const color = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+        
+        spark.style.backgroundColor = color;
+        spark.style.setProperty('--burst-x', Math.cos(angle) * velocity + 'px');
+        spark.style.setProperty('--burst-y', Math.sin(angle) * velocity + 'px');
+        spark.style.animationDelay = Math.random() * 0.3 + 's';
+        spark.style.animationDuration = (1.2 + Math.random() * 1) + 's';
+        
+        confettiContainer.appendChild(spark);
+    }
+    
+    // Remove confetti container after animation
+    setTimeout(() => {
+        if (document.body.contains(confettiContainer)) {
+            document.body.removeChild(confettiContainer);
+        }
+    }, 3000);
 }
 
 // Initialize the extension
