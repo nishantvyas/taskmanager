@@ -5,7 +5,7 @@
 
 ## Overview
 
-This Privacy Policy describes how the Goal Tracking Chrome Extension ("the Extension") handles your data. This Extension is an open source project created by [Nishant Vyas](https://www.linkedin.com/in/nishantvyas/) under DataBeeper LLC, a California-based LLC.
+This Privacy Policy describes how the Task Manager Chrome Extension ("the Extension") handles your data. This Extension is an open source project created by [Nishant Vyas](https://www.linkedin.com/in/nishantvyas/) under DataBeeper LLC, a California-based LLC.
 
 ## Data Collection and Storage
 
@@ -23,9 +23,9 @@ This Privacy Policy describes how the Goal Tracking Chrome Extension ("the Exten
 ## Types of Data Processed
 
 ### Personal Productivity Data
-- Goals and target dates you set
 - Tasks and their descriptions
-- Task completion status
+- Task completion status and timestamps
+- Goals and target dates you set
 - Project organization and preferences
 - Activity history for progress tracking
 
@@ -37,8 +37,8 @@ This Privacy Policy describes how the Goal Tracking Chrome Extension ("the Exten
 ## Data Usage
 
 Your data is used solely for:
-- Displaying your goals and tasks within the Extension
-- Tracking your progress toward goals
+- Displaying your tasks and goals within the Extension
+- Tracking task completion and progress toward goals
 - Providing productivity insights through the activity matrix
 - Enabling data backup and restore functionality
 

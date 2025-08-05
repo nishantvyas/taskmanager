@@ -1,5 +1,5 @@
 {
-  "name": "goal-countdown-extension",
+  "name": "task-manager-extension",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

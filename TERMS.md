@@ -5,7 +5,7 @@
 
 ## Overview
 
-These Terms of Service ("Terms") govern your use of the Goal Tracking Chrome Extension ("the Extension"). This Extension is an open source project created by [Nishant Vyas](https://www.linkedin.com/in/nishantvyas/) under DataBeeper LLC, a California-based LLC.
+These Terms of Service ("Terms") govern your use of the Task Manager Chrome Extension ("the Extension"). This Extension is an open source project created by [Nishant Vyas](https://www.linkedin.com/in/nishantvyas/) under DataBeeper LLC, a California-based LLC.
 
 ## Acceptance of Terms
 
@@ -14,8 +14,8 @@ By installing, accessing, or using this Extension, you agree to be bound by thes
 ## Description of Service
 
 The Extension is a productivity tool that allows you to:
-- Set and track personal goals
-- Manage tasks and projects
+- Manage tasks and track personal goals
+- Organize projects with to-do and done lists
 - Monitor progress through activity tracking
 - Export and import data for backup purposes
 

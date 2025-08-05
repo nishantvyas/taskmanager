@@ -1,6 +1,6 @@
-# Goal Tracking Extension
+# Task Manager Chrome Extension
 
-A Chrome extension for tracking your goals with a countdown timer and task management system, featuring a GitHub-style activity matrix to visualize your daily progress.
+A Chrome extension for managing your tasks and tracking goals with a countdown timer, featuring a GitHub-style activity matrix to visualize your daily progress.
 
 ## Features
 
@@ -38,7 +38,7 @@ A Chrome extension for tracking your goals with a countdown timer and task manag
 ### Developer Installation (Technical Users)
 1. Clone the repository:
    ```bash
-   git clone https://github.com/nishantvyas/goaltracking_extension.git
+   git clone https://github.com/nishantvyas/taskmanager.git
    ```
 
 2. Install dependencies:
