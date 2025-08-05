@@ -152,6 +152,7 @@ body {
     cursor: pointer;
     transition: background-color 0.2s ease;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: left;
 }
 
 .project-item:hover {
@@ -182,12 +183,14 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: left;
 }
 
 .project-meta {
     font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.6);
     margin-top: 0.1rem;
+    text-align: left;
 }
 
 .goal-header {
@@ -770,7 +773,7 @@ button:hover {
 .modal-buttons {
     display: flex;
     gap: 1rem;
-    justify-content: flex-end;
+    justify-content: center;
     margin-top: 2rem;
 }
 
@@ -1402,6 +1405,7 @@ button:hover {
     border-radius: 8px;
     margin-bottom: 0.75rem;
     background-color: rgba(255, 255, 255, 0.05);
+    text-align: left;
 }
 
 .all-project-item.active {
@@ -1425,11 +1429,13 @@ button:hover {
     font-weight: 500;
     color: #ffffff;
     margin-bottom: 0.25rem;
+    text-align: left;
 }
 
 .all-project-details {
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.6);
+    text-align: left;
 }
 
 .all-project-actions {

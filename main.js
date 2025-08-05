@@ -175,7 +175,7 @@ const elements = {
     settingsTabs: document.querySelectorAll('.settings-tab'),
     settingsTabContents: document.querySelectorAll('.settings-tab-content'),
     projectColorInput: document.getElementById('projectColorInput'),
-    deleteProjectBtn: document.getElementById('deleteProjectBtn'),
+
     allProjectsList: document.getElementById('allProjectsList'),
     // Custom modal elements
     createProjectModal: document.getElementById('createProjectModal'),
@@ -334,19 +334,37 @@ async function loadState() {
         if (multiProjectData.migration_version === 2 && multiProjectData.projects_data) {
             // Load existing multi-project data
             console.log('Loading multi-project data');
-            state = {
-                projects: JSON.parse(multiProjectData.projects_data),
-                activeProjectId: multiProjectData.active_project,
-                projectOrder: JSON.parse(multiProjectData.project_order || '[]'),
-                globalSettings: JSON.parse(multiProjectData.global_settings || '{}'),
-                migrationVersion: 2,
-                // Keep legacy fields for backward compatibility
-                goal: '',
-                targetDate: null,
-                goalCreatedAt: null,
-                tasks: [],
-                doneTasks: []
-            };
+            console.log('Raw projects_data:', multiProjectData.projects_data);
+            
+            try {
+                const parsedProjects = JSON.parse(multiProjectData.projects_data);
+                console.log('Parsed projects:', parsedProjects);
+                console.log('Number of projects:', Object.keys(parsedProjects).length);
+                
+                state = {
+                    projects: parsedProjects,
+                    activeProjectId: multiProjectData.active_project,
+                    projectOrder: JSON.parse(multiProjectData.project_order || '[]'),
+                    globalSettings: JSON.parse(multiProjectData.global_settings || '{}'),
+                    migrationVersion: 2,
+                    // Keep legacy fields for backward compatibility
+                    goal: '',
+                    targetDate: null,
+                    goalCreatedAt: null,
+                    tasks: [],
+                    doneTasks: []
+                };
+                
+                console.log('Loaded state:', {
+                    projectCount: Object.keys(state.projects).length,
+                    activeProjectId: state.activeProjectId,
+                    projectOrder: state.projectOrder
+                });
+            } catch (parseError) {
+                console.error('Error parsing projects data:', parseError);
+                console.log('Corrupted projects_data:', multiProjectData.projects_data);
+                throw parseError;
+            }
             
             // Merge default global settings
             state.globalSettings = {
@@ -356,6 +374,11 @@ async function loadState() {
                 maxProjects: 10,
                 ...state.globalSettings
             };
+            
+            // CRITICAL: Update ProjectManager state after loading
+            projectManager.state = state;
+            console.log('ProjectManager state updated after loading');
+            
         } else {
             // Migration needed - check for old single-project data
             console.log('Checking for single-project data to migrate');
@@ -364,6 +387,10 @@ async function loadState() {
         
         // Clean up old completed tasks across all projects
         cleanupOldTasksAllProjects();
+        
+        // CRITICAL: Ensure ProjectManager state is synchronized
+        projectManager.state = state;
+        console.log('Final ProjectManager state sync after loadState');
         
     } catch (error) {
         console.error('Error loading state:', error);
@@ -528,20 +555,26 @@ async function saveState() {
 
 // Update UI elements for active project
 function updateUI() {
+    console.log('updateUI called');
     const activeProject = projectManager.getActiveProject();
+    console.log('Active project in updateUI:', activeProject);
     
-    if (activeProject && activeProject.goal && activeProject.targetDate) {
+    if (activeProject && activeProject.goal) {
         elements.goalTitle.textContent = `${activeProject.goal}`;
         updateCountdown();
+        console.log('UI updated with project goal:', activeProject.goal);
     } else {
         elements.goalTitle.textContent = 'Click to set your goal...';
         resetCountdown();
+        console.log('No active project or goal, showing default message');
     }
 
     updateTaskLists();
     updateActivityMatrix();
     updateProjectSelector();
     updateProjectTheme();
+    
+    console.log('updateUI completed');
 }
 
 // Update project theme colors
@@ -737,10 +770,10 @@ function updateAllProjectsList() {
                 </div>
             </div>
             <div class="all-project-actions">
-                <button class="project-action-btn" onclick="switchToProject('${project.id}')">
+                <button class="project-action-btn switch-project-btn" data-project-id="${project.id}">
                     ${isActive ? 'Active' : 'Switch'}
                 </button>
-                <button class="project-action-btn" onclick="deleteProjectById('${project.id}')">
+                <button class="project-action-btn delete-project-btn" data-project-id="${project.id}">
                     Delete
                 </button>
             </div>
@@ -756,29 +789,27 @@ function updateAllProjectsList() {
             </div>
         `;
     }
+    
+    // Add event listeners for project action buttons
+    const switchButtons = elements.allProjectsList.querySelectorAll('.switch-project-btn');
+    const deleteButtons = elements.allProjectsList.querySelectorAll('.delete-project-btn');
+    
+    switchButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const projectId = button.getAttribute('data-project-id');
+            switchToProject(projectId);
+        });
+    });
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const projectId = button.getAttribute('data-project-id');
+            deleteProjectById(projectId);
+        });
+    });
 }
 
-// Delete current project
-function deleteCurrentProject() {
-    const activeProject = projectManager.getActiveProject();
-    if (!activeProject) return;
-    
-    showConfirmation(
-        'Delete Project',
-        `Are you sure you want to delete "${activeProject.goal}"? This action cannot be undone and will delete all tasks.`,
-        async () => {
-            try {
-                await projectManager.deleteProject(activeProject.id);
-                updateUI();
-                closeSettings();
-                showNotification('Success', 'Project deleted successfully.');
-            } catch (error) {
-                console.error('Error deleting project:', error);
-                showNotification('Error', 'Failed to delete project. Please try again.');
-            }
-        }
-    );
-}
+
 
 // Delete project by ID
 function deleteProjectById(projectId) {
@@ -793,6 +824,13 @@ function deleteProjectById(projectId) {
                 await projectManager.deleteProject(projectId);
                 updateUI();
                 updateAllProjectsList(); // Refresh the projects list
+                
+                // Reset import input to ensure it works after deletion
+                const importInput = document.getElementById('importInput');
+                if (importInput) {
+                    importInput.value = '';
+                }
+                
                 showNotification('Success', 'Project deleted successfully.');
             } catch (error) {
                 console.error('Error deleting project:', error);
@@ -1282,7 +1320,7 @@ async function saveSettings() {
                 targetDate: new Date(newDate)
             };
             
-            // Set goal creation date if this is a new goal
+        // Set goal creation date if this is a new goal
             if (!activeProject.goal || activeProject.goal !== newGoal) {
                 updates.goalCreatedAt = new Date();
             }
@@ -1419,9 +1457,6 @@ function setupEventListeners() {
     });
     
     // Project management event listeners
-    if (elements.deleteProjectBtn) {
-        elements.deleteProjectBtn.addEventListener('click', deleteCurrentProject);
-    }
     
     if (elements.projectColorInput) {
         elements.projectColorInput.addEventListener('change', updateProjectColor);
@@ -1795,17 +1830,30 @@ function getCurrentStreak(matrix) {
 
 // Export data to JSON file
 function exportData() {
+    console.log('Exporting data...');
+    console.log('Current state:', {
+        projectCount: Object.keys(state.projects || {}).length,
+        activeProjectId: state.activeProjectId,
+        migrationVersion: state.migrationVersion
+    });
+    
+    // Export in new multi-project format
     const exportData = {
         version: '1.0',
         exportDate: new Date().toISOString(),
         data: {
-            goal: state.goal,
-            targetDate: state.targetDate ? state.targetDate.toISOString() : null,
-            goalCreatedAt: state.goalCreatedAt ? state.goalCreatedAt.toISOString() : null,
-            tasks: state.tasks,
-            doneTasks: state.doneTasks
+            projects: state.projects,
+            activeProjectId: state.activeProjectId,
+            projectOrder: state.projectOrder,
+            globalSettings: state.globalSettings,
+            migrationVersion: state.migrationVersion
         }
     };
+
+    console.log('Export data prepared:', {
+        projectCount: Object.keys(exportData.data.projects || {}).length,
+        dataSize: JSON.stringify(exportData).length
+    });
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -1816,6 +1864,8 @@ function exportData() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    
+    console.log('Export completed');
 }
 
 // Import data from JSON file
@@ -1835,7 +1885,25 @@ async function importData(file) {
         if (importData.data.projects) {
             // New multi-project format
             console.log('Importing multi-project data');
-            state.projects = importData.data.projects;
+            
+            // Convert string dates to Date objects in all projects
+            const projects = importData.data.projects;
+            Object.keys(projects).forEach(projectId => {
+                const project = projects[projectId];
+                if (project.targetDate && typeof project.targetDate === 'string') {
+                    project.targetDate = new Date(project.targetDate);
+                }
+                if (project.goalCreatedAt && typeof project.goalCreatedAt === 'string') {
+                    project.goalCreatedAt = new Date(project.goalCreatedAt);
+                }
+                console.log(`Fixed dates for project ${projectId}:`, {
+                    goal: project.goal,
+                    targetDate: project.targetDate,
+                    goalCreatedAt: project.goalCreatedAt
+                });
+            });
+            
+            state.projects = projects;
             state.activeProjectId = importData.data.activeProjectId;
             state.projectOrder = importData.data.projectOrder || Object.keys(importData.data.projects);
             state.globalSettings = {
@@ -1874,6 +1942,8 @@ async function importData(file) {
             state.projects[projectId] = newProject;
             state.activeProjectId = projectId;
             state.projectOrder = [projectId];
+            
+            console.log('Created new project from old format:', newProject);
         }
 
         // Ensure migration version is set
@@ -1891,16 +1961,31 @@ async function importData(file) {
         });
 
         // Save imported state
+        console.log('Saving imported state to storage...');
+        console.log('State before saving:', {
+            projectCount: Object.keys(state.projects).length,
+            activeProjectId: state.activeProjectId,
+            migrationVersion: state.migrationVersion
+        });
+        
         await saveState();
+        console.log('State saved successfully');
         
         // Update ProjectManager state reference
         projectManager.state = state;
+        console.log('ProjectManager state updated');
         
         // Update UI
         updateUI();
         
         // Close settings modal
         closeSettings();
+        
+        // Reset the file input to allow importing the same file again
+        const importInput = document.getElementById('importInput');
+        if (importInput) {
+            importInput.value = '';
+        }
         
         // Show success message with details
         const projectCount = Object.keys(state.projects).length;
@@ -1916,6 +2001,13 @@ async function importData(file) {
         );
     } catch (error) {
         console.error('Import error:', error);
+        
+        // Reset the file input even on error
+        const importInput = document.getElementById('importInput');
+        if (importInput) {
+            importInput.value = '';
+        }
+        
         showNotification(
             'Import Failed', 
             `Error importing data: ${error.message}\nPlease check the console for details.`,
@@ -1996,9 +2088,7 @@ function triggerConfetti() {
     }, 3000);
 }
 
-// Make functions globally accessible for onclick handlers
-window.switchToProject = switchToProject;
-window.deleteProjectById = deleteProjectById;
+
 
 // Initialize the extension
 init(); 
