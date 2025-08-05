@@ -176,7 +176,26 @@ const elements = {
     settingsTabContents: document.querySelectorAll('.settings-tab-content'),
     projectColorInput: document.getElementById('projectColorInput'),
     deleteProjectBtn: document.getElementById('deleteProjectBtn'),
-    allProjectsList: document.getElementById('allProjectsList')
+    allProjectsList: document.getElementById('allProjectsList'),
+    // Custom modal elements
+    createProjectModal: document.getElementById('createProjectModal'),
+    newProjectName: document.getElementById('newProjectName'),
+    newProjectDate: document.getElementById('newProjectDate'),
+    newProjectColor: document.getElementById('newProjectColor'),
+    createProjectBtn: document.getElementById('createProjectBtn'),
+    cancelCreateProjectBtn: document.getElementById('cancelCreateProjectBtn'),
+    confirmationModal: document.getElementById('confirmationModal'),
+    confirmationTitle: document.getElementById('confirmationTitle'),
+    confirmationMessage: document.getElementById('confirmationMessage'),
+    confirmBtn: document.getElementById('confirmBtn'),
+    cancelConfirmBtn: document.getElementById('cancelConfirmBtn'),
+    notificationModal: document.getElementById('notificationModal'),
+    notificationTitle: document.getElementById('notificationTitle'),
+    notificationMessage: document.getElementById('notificationMessage'),
+    closeNotificationBtn: document.getElementById('closeNotificationBtn'),
+    // Character counter elements
+    projectNameCounter: document.getElementById('projectNameCounter'),
+    goalCounter: document.getElementById('goalCounter')
 };
 
 let currentTaskIndex = null;
@@ -384,7 +403,7 @@ async function migrateToMultiProject() {
         } else {
             // Check sync storage as fallback
             const syncData = await chrome.storage.sync.get(['goalState', 'tasks', 'doneTasks']);
-            if (syncData.goalState) {
+                         if (syncData.goalState) {
                 console.log('Found old sync storage data, migrating...');
                 const oldState = JSON.parse(syncData.goalState);
                 firstProjectData = {
@@ -399,7 +418,7 @@ async function migrateToMultiProject() {
         }
         
         // Initialize new multi-project structure
-        state = {
+                 state = {
             projects: {},
             activeProjectId: null,
             projectOrder: [],
@@ -441,7 +460,7 @@ async function migrateToMultiProject() {
 // Initialize default state
 async function initializeDefaultState() {
     console.log('Initializing default multi-project state');
-    state = {
+        state = {
         projects: {},
         activeProjectId: null,
         projectOrder: [],
@@ -453,12 +472,12 @@ async function initializeDefaultState() {
         },
         migrationVersion: 2,
         // Legacy fields
-        goal: '',
-        targetDate: null,
-        goalCreatedAt: null,
-        tasks: [],
-        doneTasks: []
-    };
+            goal: '',
+            targetDate: null,
+            goalCreatedAt: null,
+            tasks: [],
+            doneTasks: []
+        };
     
     await saveState();
 }
@@ -522,6 +541,33 @@ function updateUI() {
     updateTaskLists();
     updateActivityMatrix();
     updateProjectSelector();
+    updateProjectTheme();
+}
+
+// Update project theme colors
+function updateProjectTheme() {
+    const activeProject = projectManager.getActiveProject();
+    const projectColor = activeProject ? activeProject.color : '#ffffff';
+    
+    // Apply project color ONLY to the main goal/project title
+    const goalElement = document.querySelector('.goal-header h1');
+    if (goalElement) {
+        goalElement.style.color = projectColor;
+    }
+    
+    // Keep everything else white - countdown and list headers stay white
+    const countdownNumbers = document.querySelectorAll('.countdown-number');
+    countdownNumbers.forEach(number => {
+        number.style.color = '#ffffff';
+    });
+    
+    const listHeaders = document.querySelectorAll('.list-header h2');
+    listHeaders.forEach(header => {
+        header.style.color = '#ffffff';
+    });
+    
+    // Update CSS custom property for consistent theming
+    document.documentElement.style.setProperty('--project-color', projectColor);
 }
 
 // Update project selector
@@ -578,7 +624,7 @@ function updateProjectSelector() {
 // Switch to a different project
 async function switchToProject(projectId) {
     await projectManager.setActiveProject(projectId);
-    updateUI();
+    updateUI(); // This will apply the switched project's color theme
     closeProjectDropdown();
 }
 
@@ -592,27 +638,64 @@ function closeProjectDropdown() {
     elements.projectDropdown.classList.remove('open');
 }
 
-// Create new project
-async function createNewProject() {
-    const projectName = prompt('Enter project name:');
-    if (projectName && projectName.trim()) {
-        const targetDate = prompt('Enter target date (YYYY-MM-DD):');
-        if (targetDate) {
-            try {
-                const newProject = await projectManager.createProject({
-                    goal: projectName.trim(),
-                    targetDate: new Date(targetDate),
-                    goalCreatedAt: new Date()
-                });
-                
-                // Switch to the new project
-                await projectManager.setActiveProject(newProject.id);
-                updateUI();
-                closeProjectDropdown();
-            } catch (error) {
-                alert('Error creating project. Please check the date format.');
-            }
-        }
+// Show create project modal
+function createNewProject() {
+    // Set default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    elements.newProjectDate.value = tomorrow.toISOString().slice(0, 16);
+    
+    // Reset form
+    elements.newProjectName.value = '';
+    elements.newProjectColor.value = '#4CAF50';
+    
+    // Reset character counter
+    updateProjectNameCounter();
+    
+    // Show modal
+    showModal('createProjectModal');
+    setTimeout(() => elements.newProjectName.focus(), 100);
+}
+
+// Handle create project form submission
+async function handleCreateProject() {
+    const projectName = elements.newProjectName.value.trim();
+    const targetDate = elements.newProjectDate.value;
+    const projectColor = elements.newProjectColor.value;
+    
+    if (!projectName) {
+        showNotification('Error', 'Please enter a project name.');
+        return;
+    }
+    
+    if (projectName.length > 50) {
+        showNotification('Error', 'Project name must be 50 characters or less.');
+        return;
+    }
+    
+    if (!targetDate) {
+        showNotification('Error', 'Please select a target date.');
+        return;
+    }
+    
+    try {
+        const newProject = await projectManager.createProject({
+            goal: projectName,
+            targetDate: new Date(targetDate),
+            goalCreatedAt: new Date(),
+            color: projectColor
+        });
+        
+        // Switch to the new project
+        await projectManager.setActiveProject(newProject.id);
+        updateUI(); // This will apply the new project's color theme
+        closeProjectDropdown();
+        hideModal('createProjectModal');
+        
+        showNotification('Success', `Project "${projectName}" created successfully!`);
+    } catch (error) {
+        console.error('Error creating project:', error);
+        showNotification('Error', 'Failed to create project. Please try again.');
     }
 }
 
@@ -676,27 +759,47 @@ function updateAllProjectsList() {
 }
 
 // Delete current project
-async function deleteCurrentProject() {
+function deleteCurrentProject() {
     const activeProject = projectManager.getActiveProject();
     if (!activeProject) return;
     
-    if (confirm(`Are you sure you want to delete "${activeProject.goal}"? This cannot be undone.`)) {
-        await projectManager.deleteProject(activeProject.id);
-        updateUI();
-        closeSettings();
-    }
+    showConfirmation(
+        'Delete Project',
+        `Are you sure you want to delete "${activeProject.goal}"? This action cannot be undone and will delete all tasks.`,
+        async () => {
+            try {
+                await projectManager.deleteProject(activeProject.id);
+                updateUI();
+                closeSettings();
+                showNotification('Success', 'Project deleted successfully.');
+            } catch (error) {
+                console.error('Error deleting project:', error);
+                showNotification('Error', 'Failed to delete project. Please try again.');
+            }
+        }
+    );
 }
 
 // Delete project by ID
-async function deleteProjectById(projectId) {
+function deleteProjectById(projectId) {
     const project = projectManager.getProject(projectId);
     if (!project) return;
     
-    if (confirm(`Are you sure you want to delete "${project.goal}"? This cannot be undone.`)) {
-        await projectManager.deleteProject(projectId);
-        updateUI();
-        updateAllProjectsList(); // Refresh the projects list
-    }
+    showConfirmation(
+        'Delete Project',
+        `Are you sure you want to delete "${project.goal}"? This action cannot be undone and will delete all tasks.`,
+        async () => {
+            try {
+                await projectManager.deleteProject(projectId);
+                updateUI();
+                updateAllProjectsList(); // Refresh the projects list
+                showNotification('Success', 'Project deleted successfully.');
+            } catch (error) {
+                console.error('Error deleting project:', error);
+                showNotification('Error', 'Failed to delete project. Please try again.');
+            }
+        }
+    );
 }
 
 // Update project color
@@ -706,7 +809,107 @@ async function updateProjectColor() {
     
     const newColor = elements.projectColorInput.value;
     await projectManager.updateProject(activeProject.id, { color: newColor });
-    updateUI();
+    updateUI(); // This will call updateProjectTheme() to apply the new color
+}
+
+// Modal utility functions
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('show');
+    }
+}
+
+function hideModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+// Show notification modal
+function showNotification(title, message, type = 'info') {
+    elements.notificationTitle.textContent = title;
+    elements.notificationMessage.textContent = message;
+    
+    // Add type-specific styling
+    const modal = elements.notificationModal;
+    modal.className = 'modal'; // Reset classes
+    if (type === 'error') {
+        modal.classList.add('error');
+    } else if (type === 'success') {
+        modal.classList.add('success');
+    }
+    
+    showModal('notificationModal');
+}
+
+// Show confirmation modal
+function showConfirmation(title, message, onConfirm, onCancel = null) {
+    elements.confirmationTitle.textContent = title;
+    elements.confirmationMessage.textContent = message;
+    
+    // Remove existing event listeners
+    const newConfirmBtn = elements.confirmBtn.cloneNode(true);
+    const newCancelBtn = elements.cancelConfirmBtn.cloneNode(true);
+    elements.confirmBtn.parentNode.replaceChild(newConfirmBtn, elements.confirmBtn);
+    elements.cancelConfirmBtn.parentNode.replaceChild(newCancelBtn, elements.cancelConfirmBtn);
+    
+    // Update references
+    elements.confirmBtn = newConfirmBtn;
+    elements.cancelConfirmBtn = newCancelBtn;
+    
+    // Add new event listeners
+    elements.confirmBtn.addEventListener('click', () => {
+        hideModal('confirmationModal');
+        if (onConfirm) onConfirm();
+    });
+    
+    elements.cancelConfirmBtn.addEventListener('click', () => {
+        hideModal('confirmationModal');
+        if (onCancel) onCancel();
+    });
+    
+    showModal('confirmationModal');
+}
+
+// Character counter functions
+function updateProjectNameCounter() {
+    if (!elements.newProjectName || !elements.projectNameCounter) return;
+    
+    const currentLength = elements.newProjectName.value.length;
+    const maxLength = 50;
+    
+    elements.projectNameCounter.textContent = currentLength;
+    
+    // Change color based on usage
+    const counterElement = elements.projectNameCounter.parentElement;
+    if (currentLength >= maxLength) {
+        counterElement.style.color = '#f44336'; // Red when at limit
+    } else if (currentLength >= maxLength * 0.8) {
+        counterElement.style.color = '#ff9800'; // Orange when close to limit
+    } else {
+        counterElement.style.color = 'rgba(255, 255, 255, 0.6)'; // Default gray
+    }
+}
+
+function updateGoalCounter() {
+    if (!elements.goalInput || !elements.goalCounter) return;
+    
+    const currentLength = elements.goalInput.value.length;
+    const maxLength = 50;
+    
+    elements.goalCounter.textContent = currentLength;
+    
+    // Change color based on usage
+    const counterElement = elements.goalCounter.parentElement;
+    if (currentLength >= maxLength) {
+        counterElement.style.color = '#f44336'; // Red when at limit
+    } else if (currentLength >= maxLength * 0.8) {
+        counterElement.style.color = '#ff9800'; // Orange when close to limit
+    } else {
+        counterElement.style.color = 'rgba(255, 255, 255, 0.6)'; // Default gray
+    }
 }
 
 // Get days left for active project
@@ -1031,7 +1234,10 @@ function toggleListView() {
 function openSettings() {
     const activeProject = projectManager.getActiveProject();
     if (activeProject) {
-        if (activeProject.goal) elements.goalInput.value = activeProject.goal;
+        if (activeProject.goal) {
+            elements.goalInput.value = activeProject.goal;
+            updateGoalCounter(); // Update counter when setting value
+        }
         if (activeProject.targetDate) elements.dateInput.value = new Date(activeProject.targetDate).toISOString().slice(0, 16);
         if (elements.projectColorInput) elements.projectColorInput.value = activeProject.color || '#4CAF50';
     }
@@ -1054,6 +1260,12 @@ async function saveSettings() {
     const newDate = elements.dateInput.value;
 
     if (newGoal && newDate) {
+        // Validate goal length
+        if (newGoal.length > 50) {
+            showNotification('Error', 'Goal must be 50 characters or less.');
+            return;
+        }
+        
         let activeProject = projectManager.getActiveProject();
         
         // If no active project exists, create one
@@ -1213,6 +1425,51 @@ function setupEventListeners() {
     
     if (elements.projectColorInput) {
         elements.projectColorInput.addEventListener('change', updateProjectColor);
+    }
+    
+    // Create project modal event listeners
+    if (elements.createProjectBtn) {
+        elements.createProjectBtn.addEventListener('click', handleCreateProject);
+    }
+    
+    if (elements.cancelCreateProjectBtn) {
+        elements.cancelCreateProjectBtn.addEventListener('click', () => hideModal('createProjectModal'));
+    }
+    
+    // Notification modal event listener
+    if (elements.closeNotificationBtn) {
+        elements.closeNotificationBtn.addEventListener('click', () => hideModal('notificationModal'));
+    }
+    
+    // Color preview update for new project modal
+    if (elements.newProjectColor) {
+        elements.newProjectColor.addEventListener('change', (e) => {
+            const preview = elements.createProjectModal.querySelector('.color-preview');
+            if (preview) {
+                preview.style.backgroundColor = e.target.value;
+            }
+        });
+    }
+    
+    // Enter key handling for create project modal
+    if (elements.newProjectName) {
+        elements.newProjectName.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleCreateProject();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                hideModal('createProjectModal');
+            }
+        });
+        
+        // Character counter for new project name
+        elements.newProjectName.addEventListener('input', updateProjectNameCounter);
+    }
+    
+    // Character counter for goal input
+    if (elements.goalInput) {
+        elements.goalInput.addEventListener('input', updateGoalCounter);
     }
     
     // Close dropdown when clicking outside
@@ -1567,6 +1824,8 @@ async function importData(file) {
         const text = await file.text();
         const importData = JSON.parse(text);
         
+        console.log('Import data structure:', importData);
+        
         // Validate import data structure
         if (!importData.version || !importData.data) {
             throw new Error('Invalid backup file format');
@@ -1586,14 +1845,20 @@ async function importData(file) {
         } else {
             // Old single-project format - convert to multi-project
             console.log('Converting old single-project data to multi-project format');
+            console.log('Import data details:', {
+                goal: importData.data.goal,
+                targetDate: importData.data.targetDate,
+                tasksCount: importData.data.tasks?.length,
+                doneTasksCount: importData.data.doneTasks?.length
+            });
             
             const projectId = projectManager.generateProjectId();
             const newProject = {
                 id: projectId,
                 goal: importData.data.goal || 'Imported Project',
-                targetDate: importData.data.targetDate ? new Date(importData.data.targetDate) : null,
+            targetDate: importData.data.targetDate ? new Date(importData.data.targetDate) : null,
                 goalCreatedAt: importData.data.goalCreatedAt ? new Date(importData.data.goalCreatedAt) : new Date(),
-                tasks: Array.isArray(importData.data.tasks) ? importData.data.tasks : [],
+            tasks: Array.isArray(importData.data.tasks) ? importData.data.tasks : [],
                 doneTasks: Array.isArray(importData.data.doneTasks) ? importData.data.doneTasks : [],
                 color: '#4CAF50',
                 isActive: true,
@@ -1602,7 +1867,10 @@ async function importData(file) {
                 updatedAt: new Date().toISOString()
             };
             
-            // Create the project in the new format
+            console.log('Created new project:', newProject);
+            
+            // Clear existing projects and add the imported one
+            state.projects = {};
             state.projects[projectId] = newProject;
             state.activeProjectId = projectId;
             state.projectOrder = [projectId];
@@ -1610,9 +1878,23 @@ async function importData(file) {
 
         // Ensure migration version is set
         state.migrationVersion = 2;
+        
+        console.log('Final state after import:', {
+            projectCount: Object.keys(state.projects).length,
+            activeProjectId: state.activeProjectId,
+            projects: Object.keys(state.projects).map(id => ({
+                id,
+                goal: state.projects[id].goal,
+                tasksCount: state.projects[id].tasks.length,
+                doneTasksCount: state.projects[id].doneTasks.length
+            }))
+        });
 
         // Save imported state
         await saveState();
+        
+        // Update ProjectManager state reference
+        projectManager.state = state;
         
         // Update UI
         updateUI();
@@ -1620,12 +1902,25 @@ async function importData(file) {
         // Close settings modal
         closeSettings();
         
-        // Show success message
+        // Show success message with details
         const projectCount = Object.keys(state.projects).length;
-        alert(`Data imported successfully! ${projectCount} project(s) imported.`);
+        const activeProject = projectManager.getActiveProject();
+        const taskCounts = activeProject ? 
+            `${activeProject.tasks.length} todo tasks, ${activeProject.doneTasks.length} completed tasks` : 
+            'No active project';
+        
+        showNotification(
+            'Import Successful', 
+            `${projectCount} project(s) imported successfully!\n${taskCounts}`,
+            'success'
+        );
     } catch (error) {
         console.error('Import error:', error);
-        alert('Error importing data. Please make sure the file is a valid backup file.');
+        showNotification(
+            'Import Failed', 
+            `Error importing data: ${error.message}\nPlease check the console for details.`,
+            'error'
+        );
     }
 }
 

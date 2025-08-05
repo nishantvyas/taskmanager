@@ -11,27 +11,29 @@
 <body>
     <div class="container">
         <div class="header-section">
-            <!-- Project Selector -->
-            <div class="project-selector">
-                <div class="project-dropdown">
-                    <button id="projectDropdownBtn" class="project-dropdown-btn">
-                        <span id="currentProjectName">No Project Selected</span>
-                        <span class="dropdown-arrow">▼</span>
-                    </button>
-                    <div id="projectDropdownMenu" class="project-dropdown-menu">
-                        <div class="project-dropdown-header">
-                            <span>Projects</span>
-                            <button id="addProjectBtn" class="add-project-btn">+</button>
-                        </div>
-                        <div id="projectList" class="project-list">
-                            <!-- Projects will be populated here -->
+            <div class="goal-header">
+                <h1 id="goalTitle">Click to set your goal...</h1>
+            </div>
+            
+            <!-- Project Controls -->
+            <div class="project-controls">
+                <div class="project-selector">
+                    <div class="project-dropdown">
+                        <button id="projectDropdownBtn" class="project-dropdown-btn">
+                            <span id="currentProjectName">No Project Selected</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div id="projectDropdownMenu" class="project-dropdown-menu">
+                            <div class="project-dropdown-header">
+                                <span>Projects</span>
+                                <button id="addProjectBtn" class="add-project-btn">+</button>
+                            </div>
+                            <div id="projectList" class="project-list">
+                                <!-- Projects will be populated here -->
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="goal-header">
-                <h1 id="goalTitle">Click to set your goal...</h1>
                 <button id="settingsBtn" class="icon-button">⚙️</button>
             </div>
             
@@ -102,7 +104,10 @@
                 <h2>Current Project Settings</h2>
                 <div class="form-group">
                     <label for="goalInput">Goal:</label>
-                    <input type="text" id="goalInput" placeholder="Enter your goal">
+                    <input type="text" id="goalInput" placeholder="Enter your goal" maxlength="50">
+                    <div class="character-counter">
+                        <span id="goalCounter">0</span>/50 characters
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="dateInput">Target Date:</label>
@@ -164,6 +169,58 @@
                 <button id="saveTaskBtn" class="button">Save</button>
                 <button id="deleteTaskBtn" class="button danger">Delete</button>
                 <button id="closeTaskBtn" class="button secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Project Modal -->
+    <div id="createProjectModal" class="modal">
+        <div class="modal-content">
+            <h2>Create New Project</h2>
+            <div class="form-group">
+                <label for="newProjectName">Project Name:</label>
+                <input type="text" id="newProjectName" placeholder="Enter project name" maxlength="50">
+                <div class="character-counter">
+                    <span id="projectNameCounter">0</span>/50 characters
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="newProjectDate">Target Date:</label>
+                <input type="datetime-local" id="newProjectDate">
+            </div>
+            <div class="form-group">
+                <label for="newProjectColor">Project Color:</label>
+                <div class="color-picker">
+                    <input type="color" id="newProjectColor" value="#4CAF50">
+                    <span class="color-preview" style="background-color: #4CAF50;"></span>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="createProjectBtn" class="button">Create Project</button>
+                <button id="cancelCreateProjectBtn" class="button secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <h2 id="confirmationTitle">Confirm Action</h2>
+            <p id="confirmationMessage">Are you sure you want to proceed?</p>
+            <div class="modal-buttons">
+                <button id="confirmBtn" class="button danger">Confirm</button>
+                <button id="cancelConfirmBtn" class="button secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content">
+            <h2 id="notificationTitle">Notification</h2>
+            <p id="notificationMessage">Action completed successfully.</p>
+            <div class="modal-buttons">
+                <button id="closeNotificationBtn" class="button">OK</button>
             </div>
         </div>
     </div>
