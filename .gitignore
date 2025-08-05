@@ -34,3 +34,6 @@ yarn-error.log*
 
 # Chrome extension specific
 *.pem
+
+# Claude Code files
+CLAUDE.md

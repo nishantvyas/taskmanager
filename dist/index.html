@@ -11,6 +11,25 @@
 <body>
     <div class="container">
         <div class="header-section">
+            <!-- Project Selector -->
+            <div class="project-selector">
+                <div class="project-dropdown">
+                    <button id="projectDropdownBtn" class="project-dropdown-btn">
+                        <span id="currentProjectName">No Project Selected</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </button>
+                    <div id="projectDropdownMenu" class="project-dropdown-menu">
+                        <div class="project-dropdown-header">
+                            <span>Projects</span>
+                            <button id="addProjectBtn" class="add-project-btn">+</button>
+                        </div>
+                        <div id="projectList" class="project-list">
+                            <!-- Projects will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="goal-header">
                 <h1 id="goalTitle">Click to set your goal...</h1>
                 <button id="settingsBtn" class="icon-button">⚙️</button>
@@ -72,23 +91,56 @@
     <!-- Settings Modal -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
-            <h2>Settings</h2>
-            <div class="form-group">
-                <label for="goalInput">Goal:</label>
-                <input type="text" id="goalInput" placeholder="Enter your goal">
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-tab="current">Current Project</button>
+                <button class="settings-tab" data-tab="projects">All Projects</button>
+                <button class="settings-tab" data-tab="global">Global Settings</button>
             </div>
-            <div class="form-group">
-                <label for="dateInput">Target Date:</label>
-                <input type="datetime-local" id="dateInput">
-            </div>
-            <div class="form-group backup-section">
-                <h3>Backup & Restore</h3>
-                <div class="backup-buttons">
-                    <button id="exportBtn" class="button secondary">Export Data</button>
-                    <input type="file" id="importInput" accept=".json" style="display: none;">
-                    <button id="importBtn" class="button secondary">Import Data</button>
+            
+            <!-- Current Project Tab -->
+            <div id="currentTab" class="settings-tab-content active">
+                <h2>Current Project Settings</h2>
+                <div class="form-group">
+                    <label for="goalInput">Goal:</label>
+                    <input type="text" id="goalInput" placeholder="Enter your goal">
+                </div>
+                <div class="form-group">
+                    <label for="dateInput">Target Date:</label>
+                    <input type="datetime-local" id="dateInput">
+                </div>
+                <div class="form-group">
+                    <label for="projectColorInput">Project Color:</label>
+                    <div class="color-picker">
+                        <input type="color" id="projectColorInput" value="#4CAF50">
+                        <span class="color-preview"></span>
+                    </div>
+                </div>
+                <div class="project-actions">
+                    <button id="deleteProjectBtn" class="button danger">Delete Project</button>
                 </div>
             </div>
+            
+            <!-- All Projects Tab -->
+            <div id="projectsTab" class="settings-tab-content">
+                <h2>All Projects</h2>
+                <div id="allProjectsList" class="all-projects-list">
+                    <!-- Projects will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Global Settings Tab -->
+            <div id="globalTab" class="settings-tab-content">
+                <h2>Global Settings</h2>
+                <div class="form-group backup-section">
+                    <h3>Backup & Restore</h3>
+                    <div class="backup-buttons">
+                        <button id="exportBtn" class="button secondary">Export Data</button>
+                        <input type="file" id="importInput" accept=".json" style="display: none;">
+                        <button id="importBtn" class="button secondary">Import Data</button>
+                    </div>
+                </div>
+            </div>
+            
             <div class="modal-buttons">
                 <button id="saveSettingsBtn" class="button">Save</button>
                 <button id="closeSettingsBtn" class="button secondary">Cancel</button>
