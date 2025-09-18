@@ -505,6 +505,103 @@ body {
     margin-bottom: 1.5rem;
 }
 
+/* Project Status Section Styling */
+.project-status-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.project-status-section:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.status-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.status-label {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.status-indicator {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4CAF50;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-indicator::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: currentColor;
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.completed {
+    color: #ff9800;
+}
+
+.status-indicator.completed::before {
+    background-color: #ff9800;
+    animation: none;
+}
+
+.status-toggle-btn {
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    transition: all 0.3s ease !important;
+    min-width: 140px;
+    position: relative;
+    overflow: hidden;
+}
+
+.status-toggle-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.status-toggle-btn:hover::before {
+    left: 100%;
+}
+
+.status-toggle-btn.completed {
+    background: linear-gradient(135deg, #ff9800, #f57c00) !important;
+    border-color: #ff9800 !important;
+}
+
+.status-toggle-btn.completed:hover {
+    background: linear-gradient(135deg, #f57c00, #ef6c00) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
@@ -524,6 +621,16 @@ body {
 .form-group textarea {
     resize: vertical;
     min-height: 100px;
+}
+
+/* Calendar icon styling for datetime-local inputs */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+input[type="datetime-local"]::-webkit-inner-spin-button {
+    filter: invert(1);
 }
 
 .button-group {
@@ -1218,6 +1325,22 @@ button:hover {
     box-shadow: 0 0 8px rgba(76, 175, 80, 0.4) !important;
 }
 
+.matrix-day-completion {
+    border: 2px solid #FFD700 !important;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.6) !important;
+    position: relative;
+}
+
+.matrix-day-completion::after {
+    content: '🏆';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 8px;
+    pointer-events: none;
+}
+
 .activity-tooltip {
     position: fixed;
     background: var(--background-primary);
@@ -1305,9 +1428,8 @@ button:hover {
 
 /* Backup section styles */
 .backup-section {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 0;
+    padding-top: 0;
 }
 
 .backup-section h3 {
@@ -1346,11 +1468,12 @@ button:hover {
 
 .settings-tab:hover {
     color: rgba(255, 255, 255, 0.8);
+    background-color: rgba(128, 128, 128, 0.2);
 }
 
 .settings-tab.active {
     color: #ffffff;
-    border-bottom-color: #2196F3;
+    border-bottom-color: #ffffff;
 }
 
 .settings-tab-content {
@@ -1401,16 +1524,31 @@ button:hover {
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     margin-bottom: 0.75rem;
     background-color: rgba(255, 255, 255, 0.05);
     text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.all-project-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .all-project-item.active {
-    border-color: #4CAF50;
-    background-color: rgba(76, 175, 80, 0.1);
+    background-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.all-project-item.active:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 .all-project-color {
@@ -1504,4 +1642,56 @@ button:hover {
 
 .character-counter.error {
     color: #f44336;
+}
+
+/* Firework Animation Styles */
+.confetti.firework {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: firecracker-burst 3s ease-out forwards;
+    z-index: 10001;
+}
+
+.spark.firework {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    animation: spark-burst 2.5s ease-out forwards;
+    z-index: 10001;
+}
+
+/* Enhanced firecracker burst animation for fireworks */
+@keyframes firecracker-burst {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+    }
+    20% {
+        transform: translate(var(--burst-x), var(--burst-y)) scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--burst-x), calc(var(--burst-y) + 200px)) scale(0.3);
+        opacity: 0;
+    }
+}
+
+/* Enhanced spark burst animation for fireworks */
+@keyframes spark-burst {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+        box-shadow: 0 0 6px currentColor;
+    }
+    10% {
+        transform: translate(calc(var(--burst-x) * 0.3), calc(var(--burst-y) * 0.3)) scale(1.5);
+        opacity: 1;
+        box-shadow: 0 0 12px currentColor;
+    }
+    100% {
+        transform: translate(var(--burst-x), calc(var(--burst-y) + 150px)) scale(0.2);
+        opacity: 0;
+        box-shadow: 0 0 3px currentColor;
+    }
 } 

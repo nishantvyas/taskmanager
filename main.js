@@ -62,6 +62,8 @@ class ProjectManager {
             doneTasks: projectData.doneTasks || [],
             color: projectData.color || this.state.globalSettings.defaultProjectColor,
             isActive: true,
+            isCompleted: projectData.isCompleted || false,
+            completedAt: projectData.completedAt || null,
             order: this.state.projectOrder.length,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -175,6 +177,8 @@ const elements = {
     settingsTabs: document.querySelectorAll('.settings-tab'),
     settingsTabContents: document.querySelectorAll('.settings-tab-content'),
     projectColorInput: document.getElementById('projectColorInput'),
+    toggleCompleteBtn: document.getElementById('toggleCompleteBtn'),
+    statusIndicator: document.getElementById('statusIndicator'),
 
     allProjectsList: document.getElementById('allProjectsList'),
     // Custom modal elements
@@ -341,7 +345,7 @@ async function loadState() {
                 console.log('Parsed projects:', parsedProjects);
                 console.log('Number of projects:', Object.keys(parsedProjects).length);
                 
-                state = {
+            state = {
                     projects: parsedProjects,
                     activeProjectId: multiProjectData.active_project,
                     projectOrder: JSON.parse(multiProjectData.project_order || '[]'),
@@ -658,6 +662,8 @@ function updateProjectSelector() {
 async function switchToProject(projectId) {
     await projectManager.setActiveProject(projectId);
     updateUI(); // This will apply the switched project's color theme
+    updateAllProjectsList(); // Refresh the projects list to show new active state
+    updateToggleCompleteButton(); // Update the completion button state
     closeProjectDropdown();
 }
 
@@ -757,6 +763,12 @@ function updateAllProjectsList() {
         const isActive = project.id === state.activeProjectId;
         const projectItem = document.createElement('div');
         projectItem.className = `all-project-item ${isActive ? 'active' : ''}`;
+        projectItem.setAttribute('data-project-id', project.id);
+        
+        // Apply active project border color
+        if (isActive) {
+            projectItem.style.borderColor = project.color;
+        }
         
         const completionRate = project.doneTasks.length > 0 ? 
             Math.round((project.doneTasks.length / (project.tasks.length + project.doneTasks.length)) * 100) : 0;
@@ -767,12 +779,10 @@ function updateAllProjectsList() {
                 <div class="all-project-name">${project.goal || 'Untitled Project'}</div>
                 <div class="all-project-details">
                     ${project.tasks.length} todo, ${project.doneTasks.length} done (${completionRate}%)
+                    ${isActive ? ' • Active' : ''}
                 </div>
             </div>
             <div class="all-project-actions">
-                <button class="project-action-btn switch-project-btn" data-project-id="${project.id}">
-                    ${isActive ? 'Active' : 'Switch'}
-                </button>
                 <button class="project-action-btn delete-project-btn" data-project-id="${project.id}">
                     Delete
                 </button>
@@ -790,19 +800,31 @@ function updateAllProjectsList() {
         `;
     }
     
-    // Add event listeners for project action buttons
-    const switchButtons = elements.allProjectsList.querySelectorAll('.switch-project-btn');
+    // Add event listeners for project items and action buttons
+    const projectItems = elements.allProjectsList.querySelectorAll('.all-project-item');
     const deleteButtons = elements.allProjectsList.querySelectorAll('.delete-project-btn');
     
-    switchButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const projectId = button.getAttribute('data-project-id');
-            switchToProject(projectId);
+    // Make project items clickable to activate them
+    projectItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            // Don't activate if clicking on delete button
+            if (e.target.classList.contains('delete-project-btn')) {
+                return;
+            }
+            
+            const projectId = item.getAttribute('data-project-id');
+            if (projectId && projectId !== state.activeProjectId) {
+                switchToProject(projectId);
+            }
         });
+        
+        // Add hover cursor
+        item.style.cursor = 'pointer';
     });
     
     deleteButtons.forEach(button => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent project activation when clicking delete
             const projectId = button.getAttribute('data-project-id');
             deleteProjectById(projectId);
         });
@@ -971,6 +993,15 @@ function resetCountdown() {
 function updateCountdown() {
     const activeProject = projectManager.getActiveProject();
     if (!activeProject || !activeProject.targetDate) return;
+
+    // If project is completed, stop the countdown
+    if (activeProject.isCompleted) {
+        elements.days.textContent = 'DONE';
+        elements.hours.textContent = '✓';
+        elements.minutes.textContent = '✓';
+        elements.seconds.textContent = '✓';
+        return;
+    }
 
     const now = new Date();
     const targetDate = new Date(activeProject.targetDate);
@@ -1283,6 +1314,9 @@ function openSettings() {
     // Populate all projects tab
     updateAllProjectsList();
     
+    // Update the toggle complete button
+    updateToggleCompleteButton();
+    
     // Make sure Current Project tab is active
     switchSettingsTab('current');
     
@@ -1523,6 +1557,7 @@ function setupEventListeners() {
     elements.settingsBtn.addEventListener('click', openSettings);
     elements.closeSettingsBtn.addEventListener('click', closeSettings);
     elements.saveSettingsBtn.addEventListener('click', saveSettings);
+    elements.toggleCompleteBtn.addEventListener('click', toggleProjectComplete);
 
     // Panel navigation
     elements.nextList.addEventListener('click', () => {
@@ -1607,12 +1642,23 @@ function generateActivityMatrix(project) {
         return matrix;
     }
     
-    // End date should be the target date or today, whichever is later
+    // End date logic: if project is completed, stop at completion date
+    // Otherwise, use target date or today, whichever is later
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     const targetDate = new Date(project.targetDate);
     targetDate.setHours(23, 59, 59, 999);
-    const endDate = targetDate > today ? targetDate : today;
+    
+    let endDate;
+    if (project.isCompleted && project.completedAt) {
+        // If project is completed, stop daily progress mapping at completion date
+        const completionDate = new Date(project.completedAt);
+        completionDate.setHours(23, 59, 59, 999);
+        endDate = completionDate;
+    } else {
+        // For active projects, continue until target date or today (whichever is later)
+        endDate = targetDate > today ? targetDate : today;
+    }
     
     // Generate all days from start to end date (covers entire goal period)
     const currentDate = new Date(startDate);
@@ -1624,6 +1670,10 @@ function generateActivityMatrix(project) {
         const isToday = formatDateToString(new Date()) === dateStr;
         const isFuture = currentDate > new Date();
         
+        // Check if this is the completion date for completed projects
+        const isCompletionDate = project.isCompleted && project.completedAt && 
+                                formatDateToString(new Date(project.completedAt)) === dateStr;
+        
         matrix.push({
             date: new Date(currentDate),
             dateStr: dateStr,
@@ -1631,7 +1681,8 @@ function generateActivityMatrix(project) {
             level: isFuture && !isToday ? -1 : getActivityLevel(tasksCompleted), // -1 for future dates
             dayOfWeek: currentDate.getDay(),
             isToday: isToday,
-            isFuture: isFuture && !isToday
+            isFuture: isFuture && !isToday,
+            isCompletionDate: isCompletionDate
         });
         
         currentDate.setDate(currentDate.getDate() + 1);
@@ -1702,6 +1753,11 @@ function renderActivityMatrix(matrix) {
             className += ' matrix-day-today';
         }
         
+        // Add special class for completion date
+        if (day.isCompletionDate) {
+            className += ' matrix-day-completion';
+        }
+        
         dayElement.className = className;
         dayElement.dataset.date = day.dateStr;
         dayElement.dataset.count = day.count;
@@ -1728,6 +1784,9 @@ function showTooltip(e) {
     const date = new Date(dayDateStr + 'T00:00:00'); // Force local time interpretation
     const isFuture = dayDateStr > todayStr;
     
+    // Check if this is the completion date
+    const isCompletionDate = dayElement.classList.contains('matrix-day-completion');
+    
     const displayDateStr = date.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
@@ -1736,8 +1795,17 @@ function showTooltip(e) {
     });
     
     let tooltipText;
-    if (isFuture && !isToday) {
-        tooltipText = `No activity yet on ${displayDateStr}`;
+    if (isCompletionDate) {
+        const taskText = count === 1 ? 'task' : 'tasks';
+        tooltipText = `🏆 Project completed on ${displayDateStr} (${count} ${taskText} done)`;
+    } else if (isFuture && !isToday) {
+        // Check if the project is completed to show why no future activity
+        const activeProject = projectManager.getActiveProject();
+        if (activeProject && activeProject.isCompleted) {
+            tooltipText = `Project was completed - no further progress tracked`;
+        } else {
+            tooltipText = `No activity yet on ${displayDateStr}`;
+        }
     } else if (isToday) {
         const taskText = count === 1 ? 'task' : 'tasks';
         tooltipText = `${count} ${taskText} completed today`;
@@ -1785,7 +1853,21 @@ function updateActivityStats(matrix) {
     const totalTasks = matrix.reduce((sum, day) => sum + day.count, 0);
     const streak = getCurrentStreak(matrix);
     
-    elements.activityStats.textContent = `${totalTasks} tasks completed across ${activeDays} days (${streak} day streak)`;
+    // Check if project is completed and add completion info
+    const activeProject = projectManager.getActiveProject();
+    let statsText = `${totalTasks} tasks completed across ${activeDays} days (${streak} day streak)`;
+    
+    if (activeProject && activeProject.isCompleted && activeProject.completedAt) {
+        const completionDate = new Date(activeProject.completedAt);
+        const completionDateStr = completionDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        statsText += ` • ✅ Completed ${completionDateStr}`;
+    }
+    
+    elements.activityStats.textContent = statsText;
 }
 
 function getCurrentStreak(matrix) {
@@ -2088,7 +2170,137 @@ function triggerConfetti() {
     }, 3000);
 }
 
+// Project completion management
+async function toggleProjectComplete() {
+    const activeProject = projectManager.getActiveProject();
+    if (!activeProject) return;
+    
+    const wasCompleted = activeProject.isCompleted;
+    const newStatus = !wasCompleted;
+    
+    try {
+        await projectManager.updateProject(activeProject.id, {
+            isCompleted: newStatus,
+            completedAt: newStatus ? new Date().toISOString() : null
+        });
+        
+        // Show fireworks if marking as complete
+        if (newStatus) {
+            triggerFireworks();
+            showNotification('Project completed! 🎉', 'success');
+        } else {
+            showNotification('Project resumed! 🚀', 'success');
+        }
+        
+        // Update UI to reflect the new status
+        updateUI();
+        updateToggleCompleteButton();
+        
+    } catch (error) {
+        console.error('Error toggling project completion:', error);
+        showNotification('Error updating project status', 'error');
+    }
+}
 
+function updateToggleCompleteButton() {
+    const activeProject = projectManager.getActiveProject();
+    if (!activeProject || !elements.toggleCompleteBtn || !elements.statusIndicator) return;
+    
+    if (activeProject.isCompleted) {
+        // Update button for completed state
+        elements.toggleCompleteBtn.textContent = 'Resume Project';
+        elements.toggleCompleteBtn.classList.add('completed');
+        elements.toggleCompleteBtn.classList.remove('secondary');
+        
+        // Update status indicator
+        elements.statusIndicator.textContent = 'Completed';
+        elements.statusIndicator.classList.add('completed');
+    } else {
+        // Update button for active state
+        elements.toggleCompleteBtn.textContent = 'Mark Complete';
+        elements.toggleCompleteBtn.classList.remove('completed', 'secondary');
+        
+        // Update status indicator
+        elements.statusIndicator.textContent = 'In Progress';
+        elements.statusIndicator.classList.remove('completed');
+    }
+}
+
+// Fireworks animation for project completion
+function triggerFireworks() {
+    const fireworksContainer = document.createElement('div');
+    fireworksContainer.className = 'confetti-container'; // Reuse confetti container styles
+    document.body.appendChild(fireworksContainer);
+    
+    const fireworkColors = ['#ff6b6b', '#ff9500', '#ffdd00', '#4ecdc4', '#45b7d1', '#eb4d4b', '#6c5ce7', '#a29bfe', '#fd79a8', '#fdcb6e'];
+    const sparkColors = ['#ffff00', '#ffffff', '#ff8800', '#ff4444', '#00ff88', '#8844ff'];
+    
+    // Create multiple firework bursts at different positions and times
+    const fireworkPositions = [
+        { x: '25%', y: '30%', delay: 0 },
+        { x: '75%', y: '25%', delay: 300 },
+        { x: '50%', y: '40%', delay: 600 },
+        { x: '20%', y: '50%', delay: 900 },
+        { x: '80%', y: '45%', delay: 1200 }
+    ];
+    
+    fireworkPositions.forEach((position, index) => {
+        setTimeout(() => {
+            createFireworkBurst(fireworksContainer, position, fireworkColors, sparkColors);
+        }, position.delay);
+    });
+    
+    // Remove fireworks container after all animations
+    setTimeout(() => {
+        if (document.body.contains(fireworksContainer)) {
+            document.body.removeChild(fireworksContainer);
+        }
+    }, 5000);
+}
+
+function createFireworkBurst(container, position, colors, sparkColors) {
+    // Create main burst particles
+    for (let i = 0; i < 40; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'confetti firework';
+        
+        const angle = (Math.PI * 2 * i) / 40;
+        const velocity = 150 + Math.random() * 200;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        
+        particle.style.backgroundColor = color;
+        particle.style.position = 'fixed';
+        particle.style.left = position.x;
+        particle.style.top = position.y;
+        particle.style.setProperty('--burst-x', Math.cos(angle) * velocity + 'px');
+        particle.style.setProperty('--burst-y', Math.sin(angle) * velocity + 'px');
+        particle.style.animationDelay = Math.random() * 0.1 + 's';
+        particle.style.animationDuration = (2.5 + Math.random() * 1) + 's';
+        
+        container.appendChild(particle);
+    }
+    
+    // Create sparkly trails
+    for (let i = 0; i < 60; i++) {
+        const spark = document.createElement('div');
+        spark.className = 'spark firework';
+        
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 80 + Math.random() * 180;
+        const color = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+        
+        spark.style.backgroundColor = color;
+        spark.style.position = 'fixed';
+        spark.style.left = position.x;
+        spark.style.top = position.y;
+        spark.style.setProperty('--burst-x', Math.cos(angle) * velocity + 'px');
+        spark.style.setProperty('--burst-y', Math.sin(angle) * velocity + 'px');
+        spark.style.animationDelay = Math.random() * 0.2 + 's';
+        spark.style.animationDuration = (1.8 + Math.random() * 1.2) + 's';
+        
+        container.appendChild(spark);
+    }
+}
 
 // Initialize the extension
 init(); 

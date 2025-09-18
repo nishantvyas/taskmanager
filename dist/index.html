@@ -93,6 +93,7 @@
     <!-- Settings Modal -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
+            <h2>Settings</h2>
             <div class="settings-tabs">
                 <button class="settings-tab active" data-tab="current">Current Project</button>
                 <button class="settings-tab" data-tab="projects">All Projects</button>
@@ -101,7 +102,6 @@
             
             <!-- Current Project Tab -->
             <div id="currentTab" class="settings-tab-content active">
-                <h2>Current Project Settings</h2>
                 <div class="form-group">
                     <label for="goalInput">Goal:</label>
                     <input type="text" id="goalInput" placeholder="Enter your goal" maxlength="50">
@@ -120,12 +120,21 @@
                         <span class="color-preview"></span>
                     </div>
                 </div>
+                
+                <div class="form-group">
+                    <div class="project-status-section">
+                        <div class="status-info">
+                            <span class="status-label">Project Status:</span>
+                            <span id="statusIndicator" class="status-indicator">In Progress</span>
+                        </div>
+                        <button id="toggleCompleteBtn" class="button status-toggle-btn">Mark Complete</button>
+                    </div>
+                </div>
 
             </div>
             
             <!-- All Projects Tab -->
             <div id="projectsTab" class="settings-tab-content">
-                <h2>All Projects</h2>
                 <div id="allProjectsList" class="all-projects-list">
                     <!-- Projects will be populated here -->
                 </div>
@@ -133,7 +142,6 @@
             
             <!-- Global Settings Tab -->
             <div id="globalTab" class="settings-tab-content">
-                <h2>Global Settings</h2>
                 <div class="form-group backup-section">
                     <h3>Backup & Restore</h3>
                     <div class="backup-buttons">

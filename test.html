@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launch Extension Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        .test-description {
+            margin-bottom: 10px;
+            color: #ccc;
+        }
+        .test-steps {
+            list-style: decimal;
+            margin-left: 20px;
+        }
+        .test-steps li {
+            margin: 5px 0;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #555;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Launch Extension - Project Completion Test</h1>
+    
+    <div class="test-section">
+        <h2>Test: Daily Progress Mapping Stops on Project Completion</h2>
+        <div class="test-description">
+            This test verifies that when a project is marked as complete, the daily progress mapping stops at the completion date.
+        </div>
+        
+        <h3>Test Steps:</h3>
+        <ol class="test-steps">
+            <li>Open the Launch Extension below</li>
+            <li>Create a new project with a future target date</li>
+            <li>Add some tasks and complete a few to see activity in the matrix</li>
+            <li>Mark the project as complete using the "Mark Complete" button in settings</li>
+            <li>Observe that the activity matrix stops showing days beyond the completion date</li>
+            <li>Hover over the completion date to see the special completion tooltip</li>
+            <li>Check that the activity stats show the completion date</li>
+        </ol>
+        
+        <h3>Expected Results:</h3>
+        <ul>
+            <li>✅ Activity matrix should stop at completion date (no future grid squares)</li>
+            <li>✅ Completion date should be highlighted with a golden border and trophy emoji</li>
+            <li>✅ Tooltip should show "🏆 Project completed on [date]"</li>
+            <li>✅ Activity stats should show "• ✅ Completed [date]"</li>
+            <li>✅ Countdown should show "DONE ✓ ✓ ✓"</li>
+        </ul>
+    </div>
+    
+    <iframe src="index.html" title="Launch Extension"></iframe>
+    
+    <div class="test-section">
+        <h2>Technical Implementation Details</h2>
+        <p>The implementation includes:</p>
+        <ul>
+            <li><strong>generateActivityMatrix():</strong> Modified to stop at completion date when project.isCompleted is true</li>
+            <li><strong>renderActivityMatrix():</strong> Added special styling for completion date with .matrix-day-completion class</li>
+            <li><strong>showTooltip():</strong> Enhanced to show completion message and explain why no future progress is tracked</li>
+            <li><strong>updateActivityStats():</strong> Added completion date information to the stats display</li>
+            <li><strong>CSS:</strong> Added golden border, shadow, and trophy emoji for completion date styling</li>
+        </ul>
+    </div>
+    
+</body>
+</html>
