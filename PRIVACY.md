@@ -1,11 +1,11 @@
 # Privacy Policy
 
-**Effective Date:** January 8, 2025  
-**Last Updated:** January 8, 2025
+**Effective Date:** 2024  
+**Last Updated:** September 18, 2025
 
 ## Overview
 
-This Privacy Policy describes how the Task Manager Chrome Extension ("the Extension") handles your data. This Extension is an open source project created by [Nishant Vyas](https://www.linkedin.com/in/nishantvyas/) under DataBeeper LLC, a California-based LLC.
+This Privacy Policy describes how the Task Manager Chrome Extension ("the Extension") handles your data. The Extension provides goal countdown timers, multi-project task management, and GitHub-style activity tracking to help you manage your productivity. This Extension is an open source project created by [Nishant Vyas](https://www.linkedin.com/in/nishantvyas/) under DataBeeper LLC, a California-based LLC.
 
 ## Data Collection and Storage
 
@@ -23,11 +23,13 @@ This Privacy Policy describes how the Task Manager Chrome Extension ("the Extens
 ## Types of Data Processed
 
 ### Personal Productivity Data
-- Tasks and their descriptions
+- Tasks and their descriptions for multiple projects
 - Task completion status and timestamps
-- Goals and target dates you set
-- Project organization and preferences
-- Activity history for progress tracking
+- Goal countdown timers and target dates
+- Project names, descriptions, and color themes
+- GitHub-style activity matrix data showing daily task completion
+- Current activity streaks and productivity statistics
+- Project organization and switching preferences
 
 ### Technical Data
 - Extension settings and preferences
@@ -37,10 +39,13 @@ This Privacy Policy describes how the Task Manager Chrome Extension ("the Extens
 ## Data Usage
 
 Your data is used solely for:
-- Displaying your tasks and goals within the Extension
-- Tracking task completion and progress toward goals
-- Providing productivity insights through the activity matrix
-- Enabling data backup and restore functionality
+- Displaying your tasks and goals within the Extension interface
+- Managing multiple projects with individual countdown timers
+- Tracking task completion and progress toward project goals
+- Generating GitHub-style activity matrix visualization
+- Calculating daily productivity statistics and activity streaks
+- Enabling drag-and-drop task management between To-Do and Done lists
+- Providing data backup and restore functionality via JSON export/import
 
 ## Data Sharing
 
@@ -98,7 +103,7 @@ For questions about this Privacy Policy or data practices, please connect with m
 ## Legal Framework
 
 This Extension operates under:
-- **License:** MIT License (see LICENSE file)
+- **License:** MIT License (see LICENSE file) - Copyright (c) 2024 Nishant Vyas
 - **Jurisdiction:** California, United States
 - **Organization:** DataBeeper LLC
 
