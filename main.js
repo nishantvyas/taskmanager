@@ -1,19 +1,43 @@
 // Native date difference functions
+/**
+ * Calculates the difference in whole days between two dates.
+ * @param {Date} endDate - The end date.
+ * @param {Date} startDate - The start date.
+ * @returns {number} The total number of full days between the two dates.
+ */
 function differenceInDays(endDate, startDate) {
     const diffTime = endDate.getTime() - startDate.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
+/**
+ * Calculates the difference in whole hours between two dates.
+ * @param {Date} endDate - The end date.
+ * @param {Date} startDate - The start date.
+ * @returns {number} The total number of full hours between the two dates.
+ */
 function differenceInHours(endDate, startDate) {
     const diffTime = endDate.getTime() - startDate.getTime();
     return Math.floor(diffTime / (1000 * 60 * 60));
 }
 
+/**
+ * Calculates the difference in whole minutes between two dates.
+ * @param {Date} endDate - The end date.
+ * @param {Date} startDate - The start date.
+ * @returns {number} The total number of full minutes between the two dates.
+ */
 function differenceInMinutes(endDate, startDate) {
     const diffTime = endDate.getTime() - startDate.getTime();
     return Math.floor(diffTime / (1000 * 60));
 }
 
+/**
+ * Calculates the difference in whole seconds between two dates.
+ * @param {Date} endDate - The end date.
+ * @param {Date} startDate - The start date.
+ * @returns {number} The total number of seconds between the two dates.
+ */
 function differenceInSeconds(endDate, startDate) {
     const diffTime = endDate.getTime() - startDate.getTime();
     return Math.floor(diffTime / 1000);
@@ -41,16 +65,40 @@ let state = {
     doneTasks: []
 };
 
-// ProjectManager class for handling multi-project operations
+/**
+ * @class ProjectManager
+ * @description Manages all operations related to projects, including creation, deletion, and state management.
+ */
 class ProjectManager {
+    /**
+     * Creates an instance of ProjectManager.
+     * @memberof ProjectManager
+     */
     constructor() {
         this.state = state;
     }
     
+    /**
+     * Generates a unique ID for a new project.
+     * @returns {string} A unique project identifier.
+     * @memberof ProjectManager
+     */
     generateProjectId() {
         return 'project_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
     
+    /**
+     * Creates a new project and adds it to the state.
+     * @param {object} projectData - The data for the new project.
+     * @param {string} [projectData.goal] - The name or goal of the project.
+     * @param {Date} [projectData.targetDate] - The target completion date for the project.
+     * @param {Date} [projectData.goalCreatedAt] - The creation date of the project goal.
+     * @param {Array} [projectData.tasks] - The list of to-do tasks.
+     * @param {Array} [projectData.doneTasks] - The list of completed tasks.
+     * @param {string} [projectData.color] - The hex color code for the project theme.
+     * @returns {Promise<object>} The newly created project object.
+     * @memberof ProjectManager
+     */
     async createProject(projectData) {
         const projectId = this.generateProjectId();
         const newProject = {
@@ -81,10 +129,23 @@ class ProjectManager {
         return newProject;
     }
     
+    /**
+     * Retrieves a project by its ID.
+     * @param {string} projectId - The ID of the project to retrieve.
+     * @returns {object|null} The project object, or null if not found.
+     * @memberof ProjectManager
+     */
     getProject(projectId) {
         return this.state.projects[projectId] || null;
     }
     
+    /**
+     * Updates an existing project with new data.
+     * @param {string} projectId - The ID of the project to update.
+     * @param {object} updates - An object containing the properties to update.
+     * @returns {Promise<object|null>} The updated project object, or null if not found.
+     * @memberof ProjectManager
+     */
     async updateProject(projectId, updates) {
         if (!this.state.projects[projectId]) return null;
         
@@ -98,6 +159,12 @@ class ProjectManager {
         return this.state.projects[projectId];
     }
     
+    /**
+     * Deletes a project from the state.
+     * @param {string} projectId - The ID of the project to delete.
+     * @returns {Promise<boolean>} True if deletion was successful, false otherwise.
+     * @memberof ProjectManager
+     */
     async deleteProject(projectId) {
         if (!this.state.projects[projectId]) return false;
         
@@ -113,10 +180,21 @@ class ProjectManager {
         return true;
     }
     
+    /**
+     * Retrieves the currently active project.
+     * @returns {object|null} The active project object, or null if no project is active.
+     * @memberof ProjectManager
+     */
     getActiveProject() {
         return this.state.activeProjectId ? this.state.projects[this.state.activeProjectId] : null;
     }
     
+    /**
+     * Sets a project as the active project.
+     * @param {string} projectId - The ID of the project to set as active.
+     * @returns {Promise<boolean>} True if the project was successfully set as active, false otherwise.
+     * @memberof ProjectManager
+     */
     async setActiveProject(projectId) {
         if (!this.state.projects[projectId]) return false;
         
@@ -125,10 +203,20 @@ class ProjectManager {
         return true;
     }
     
+    /**
+     * Retrieves all projects in their specified order.
+     * @returns {Array<object>} An array of all project objects.
+     * @memberof ProjectManager
+     */
     getAllProjects() {
         return this.state.projectOrder.map(id => this.state.projects[id]).filter(Boolean);
     }
     
+    /**
+     * Retrieves all projects that are marked as active.
+     * @returns {Array<object>} An array of active project objects.
+     * @memberof ProjectManager
+     */
     getActiveProjects() {
         return this.getAllProjects().filter(project => project.isActive);
     }
@@ -137,7 +225,10 @@ class ProjectManager {
 // Initialize ProjectManager
 const projectManager = new ProjectManager();
 
-// DOM Elements
+/**
+ * A collection of cached DOM elements for easy access and improved performance.
+ * @type {Object<string, HTMLElement>}
+ */
 const elements = {
     countdown: document.getElementById('countdown'),
     days: document.getElementById('days'),
@@ -205,7 +296,10 @@ const elements = {
 let currentTaskIndex = null;
 let currentTaskList = null;
 
-// Initialize the extension
+/**
+ * Initializes the extension by loading state, updating the UI, and setting up event listeners.
+ * @async
+ */
 async function init() {
     await loadState();
     migrateTaskTimestamps(); // Fix existing task timestamps
@@ -214,7 +308,11 @@ async function init() {
     startCountdownTimer();
 }
 
-// Migration function to fix existing task timestamps from UTC to local time
+/**
+ * Migrates task timestamps to handle timezone changes correctly.
+ * This function marks tasks as migrated without changing their timestamps,
+ * as the new `formatDateToString` function handles timezone conversions.
+ */
 function migrateTaskTimestamps() {
     let migrationNeeded = false;
     
@@ -243,7 +341,11 @@ function migrateTaskTimestamps() {
     }
 }
 
-// Clean up old completed tasks to prevent storage bloat
+/**
+ * @deprecated This function is for single-project state and is no longer actively used.
+ * Cleans up old completed tasks from the `doneTasks` array to prevent storage bloat.
+ * It keeps the 1000 most recent tasks and any tasks completed within the last 90 days.
+ */
 function cleanupOldTasks() {
     if (!Array.isArray(state.doneTasks) || state.doneTasks.length <= 1000) {
         return; // No cleanup needed
@@ -280,7 +382,10 @@ function cleanupOldTasks() {
     }
 }
 
-// Clean up old completed tasks across all projects
+/**
+ * Cleans up old completed tasks across all projects to prevent storage bloat.
+ * For each project, it keeps the 1000 most recent tasks and any tasks completed within the last 90 days.
+ */
 function cleanupOldTasksAllProjects() {
     if (!state.projects) return;
     
@@ -327,7 +432,12 @@ function cleanupOldTasksAllProjects() {
     }
 }
 
-// Load state from Chrome storage with multi-project support
+/**
+ * Loads the application state from Chrome's local storage.
+ * It first attempts to load the multi-project data structure. If that fails or is not present,
+ * it triggers the migration process from the legacy single-project format.
+ * @async
+ */
 async function loadState() {
     try {
         // First, try to load new multi-project structure
@@ -403,7 +513,11 @@ async function loadState() {
     }
 }
 
-// Migration function to convert single-project to multi-project
+/**
+ * Migrates data from the old single-project format to the new multi-project structure.
+ * It checks both local and sync storage for legacy data and creates the first project from it.
+ * @async
+ */
 async function migrateToMultiProject() {
     console.log('Starting migration to multi-project structure');
     
@@ -488,7 +602,11 @@ async function migrateToMultiProject() {
     }
 }
 
-// Initialize default state
+/**
+ * Initializes a default, empty state for the application when no existing data is found.
+ * This sets up the multi-project structure.
+ * @async
+ */
 async function initializeDefaultState() {
     console.log('Initializing default multi-project state');
         state = {
@@ -513,7 +631,10 @@ async function initializeDefaultState() {
     await saveState();
 }
 
-// Clean up old storage keys after migration
+/**
+ * Removes old, legacy storage keys from Chrome storage after a successful migration.
+ * @async
+ */
 async function cleanupOldStorage() {
     try {
         await chrome.storage.local.remove(['goalState', 'tasks', 'doneTasks']);
@@ -524,7 +645,11 @@ async function cleanupOldStorage() {
     }
 }
 
-// Save state to Chrome storage with multi-project support
+/**
+ * Saves the current application state to Chrome's storage.
+ * It primarily uses local storage for the full data and sync storage for a lightweight metadata backup.
+ * @async
+ */
 async function saveState() {
     try {
         // Primary: Save to local storage (unlimited quota)
@@ -557,7 +682,10 @@ async function saveState() {
     }
 }
 
-// Update UI elements for active project
+/**
+ * Updates all UI components to reflect the current state of the active project.
+ * This function serves as the main rendering hub.
+ */
 function updateUI() {
     console.log('updateUI called');
     const activeProject = projectManager.getActiveProject();
@@ -581,7 +709,10 @@ function updateUI() {
     console.log('updateUI completed');
 }
 
-// Update project theme colors
+/**
+ * Updates the theme colors of the UI based on the active project's color.
+ * It sets the color for the goal title and a CSS custom property for broader use.
+ */
 function updateProjectTheme() {
     const activeProject = projectManager.getActiveProject();
     const projectColor = activeProject ? activeProject.color : '#ffffff';
@@ -607,7 +738,10 @@ function updateProjectTheme() {
     document.documentElement.style.setProperty('--project-color', projectColor);
 }
 
-// Update project selector
+/**
+ * Updates the project selector dropdown with the list of all active projects.
+ * It highlights the currently active project and updates the document title.
+ */
 function updateProjectSelector() {
     const activeProject = projectManager.getActiveProject();
     const allProjects = projectManager.getActiveProjects();
@@ -658,7 +792,11 @@ function updateProjectSelector() {
     }
 }
 
-// Switch to a different project
+/**
+ * Switches the active project to the one with the specified ID.
+ * @param {string} projectId - The ID of the project to switch to.
+ * @async
+ */
 async function switchToProject(projectId) {
     await projectManager.setActiveProject(projectId);
     updateUI(); // This will apply the switched project's color theme
@@ -667,17 +805,24 @@ async function switchToProject(projectId) {
     closeProjectDropdown();
 }
 
-// Toggle project dropdown
+/**
+ * Toggles the visibility of the project selector dropdown menu.
+ */
 function toggleProjectDropdown() {
     elements.projectDropdown.classList.toggle('open');
 }
 
-// Close project dropdown
+/**
+ * Closes the project selector dropdown menu.
+ */
 function closeProjectDropdown() {
     elements.projectDropdown.classList.remove('open');
 }
 
-// Show create project modal
+/**
+ * Opens and initializes the "Create New Project" modal.
+ * It pre-fills the date input and resets the form fields.
+ */
 function createNewProject() {
     // Set default date to tomorrow
     const tomorrow = new Date();
@@ -696,7 +841,11 @@ function createNewProject() {
     setTimeout(() => elements.newProjectName.focus(), 100);
 }
 
-// Handle create project form submission
+/**
+ * Handles the submission of the "Create New Project" form.
+ * It validates the input, creates a new project, and switches to it.
+ * @async
+ */
 async function handleCreateProject() {
     const projectName = elements.newProjectName.value.trim();
     const targetDate = elements.newProjectDate.value;
@@ -738,7 +887,10 @@ async function handleCreateProject() {
     }
 }
 
-// Switch settings tab
+/**
+ * Switches the visible tab in the settings modal.
+ * @param {string} tabName - The name of the tab to switch to (e.g., 'current', 'projects').
+ */
 function switchSettingsTab(tabName) {
     // Remove active class from all tabs and contents
     elements.settingsTabs.forEach(tab => tab.classList.remove('active'));
@@ -752,7 +904,9 @@ function switchSettingsTab(tabName) {
     if (selectedContent) selectedContent.classList.add('active');
 }
 
-// Update all projects list in settings
+/**
+ * Populates the "All Projects" list in the settings modal with project details and action buttons.
+ */
 function updateAllProjectsList() {
     if (!elements.allProjectsList) return;
     
@@ -833,7 +987,10 @@ function updateAllProjectsList() {
 
 
 
-// Delete project by ID
+/**
+ * Initiates the deletion process for a project by its ID, showing a confirmation modal first.
+ * @param {string} projectId - The ID of the project to delete.
+ */
 function deleteProjectById(projectId) {
     const project = projectManager.getProject(projectId);
     if (!project) return;
@@ -862,7 +1019,10 @@ function deleteProjectById(projectId) {
     );
 }
 
-// Update project color
+/**
+ * Updates the color of the currently active project.
+ * @async
+ */
 async function updateProjectColor() {
     const activeProject = projectManager.getActiveProject();
     if (!activeProject || !elements.projectColorInput) return;
@@ -872,7 +1032,10 @@ async function updateProjectColor() {
     updateUI(); // This will call updateProjectTheme() to apply the new color
 }
 
-// Modal utility functions
+/**
+ * Displays a modal by its ID.
+ * @param {string} modalId - The ID of the modal element to show.
+ */
 function showModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -880,6 +1043,10 @@ function showModal(modalId) {
     }
 }
 
+/**
+ * Hides a modal by its ID.
+ * @param {string} modalId - The ID of the modal element to hide.
+ */
 function hideModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -887,7 +1054,12 @@ function hideModal(modalId) {
     }
 }
 
-// Show notification modal
+/**
+ * Displays a notification modal with a title and message.
+ * @param {string} title - The title of the notification.
+ * @param {string} message - The main message content of the notification.
+ * @param {('info'|'success'|'error')} [type='info'] - The type of notification, for styling purposes.
+ */
 function showNotification(title, message, type = 'info') {
     elements.notificationTitle.textContent = title;
     elements.notificationMessage.textContent = message;
@@ -904,7 +1076,13 @@ function showNotification(title, message, type = 'info') {
     showModal('notificationModal');
 }
 
-// Show confirmation modal
+/**
+ * Displays a confirmation modal and executes a callback based on user's choice.
+ * @param {string} title - The title of the confirmation dialog.
+ * @param {string} message - The message asking for confirmation.
+ * @param {Function} onConfirm - The callback function to execute if the user confirms.
+ * @param {Function|null} [onCancel=null] - The callback function to execute if the user cancels.
+ */
 function showConfirmation(title, message, onConfirm, onCancel = null) {
     elements.confirmationTitle.textContent = title;
     elements.confirmationMessage.textContent = message;
@@ -933,7 +1111,10 @@ function showConfirmation(title, message, onConfirm, onCancel = null) {
     showModal('confirmationModal');
 }
 
-// Character counter functions
+/**
+ * Updates the character counter for the new project name input field.
+ * The color of the counter changes as the text length approaches the maximum limit.
+ */
 function updateProjectNameCounter() {
     if (!elements.newProjectName || !elements.projectNameCounter) return;
     
@@ -953,6 +1134,10 @@ function updateProjectNameCounter() {
     }
 }
 
+/**
+ * Updates the character counter for the goal input field in the settings.
+ * The color of the counter changes as the text length approaches the maximum limit.
+ */
 function updateGoalCounter() {
     if (!elements.goalInput || !elements.goalCounter) return;
     
@@ -972,7 +1157,10 @@ function updateGoalCounter() {
     }
 }
 
-// Get days left for active project
+/**
+ * Calculates the number of days left until the active project's target date.
+ * @returns {number|string} The number of days remaining, or '--' if not applicable.
+ */
 function getDaysLeft() {
     const activeProject = projectManager.getActiveProject();
     if (!activeProject || !activeProject.targetDate) return '--';
@@ -981,7 +1169,9 @@ function getDaysLeft() {
     return Math.max(0, differenceInDays(targetDate, now));
 }
 
-// Reset countdown display
+/**
+ * Resets the countdown display to its default placeholder state.
+ */
 function resetCountdown() {
     elements.days.textContent = '--';
     elements.hours.textContent = '--';
@@ -989,7 +1179,10 @@ function resetCountdown() {
     elements.seconds.textContent = '--';
 }
 
-// Update countdown timer for active project
+/**
+ * Updates the countdown timer display with the time remaining for the active project.
+ * If the target date is reached, it resets the countdown.
+ */
 function updateCountdown() {
     const activeProject = projectManager.getActiveProject();
     if (!activeProject || !activeProject.targetDate) return;
@@ -1031,13 +1224,20 @@ function updateCountdown() {
     elements.seconds.textContent = String(seconds).padStart(2, '0');
 }
 
-// Start countdown timer
+/**
+ * Starts the countdown timer, updating it every second.
+ */
 function startCountdownTimer() {
     updateCountdown();
     setInterval(updateCountdown, 1000);
 }
 
-// Task management
+/**
+ * Creates a new task object.
+ * @param {string} title - The title of the task.
+ * @param {string} [description=''] - The description of the task.
+ * @returns {object} The new task object.
+ */
 function createTask(title, description = '') {
     return {
         title,
@@ -1047,6 +1247,12 @@ function createTask(title, description = '') {
     };
 }
 
+/**
+ * Updates an existing task object with new data.
+ * @param {object} task - The original task object.
+ * @param {object} updates - An object containing the properties to update.
+ * @returns {object} The updated task object.
+ */
 function updateTask(task, updates) {
     return {
         ...task,
@@ -1055,10 +1261,22 @@ function updateTask(task, updates) {
     };
 }
 
+/**
+ * Sorts an array of tasks by their `updatedAt` timestamp in descending order.
+ * @param {Array<object>} tasks - The array of tasks to sort.
+ * @returns {Array<object>} A new array containing the sorted tasks.
+ */
 function sortTasksByUpdated(tasks) {
     return [...tasks].sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
+/**
+ * Creates a DOM element for a single task.
+ * @param {object} task - The task object.
+ * @param {number} index - The index of the task in its original list.
+ * @param {boolean} isDone - Whether the task is in the "Done" list.
+ * @returns {HTMLElement} The created task element.
+ */
 function createTaskElement(task, index, isDone) {
     const div = document.createElement('div');
     div.className = 'task-item';
@@ -1089,6 +1307,11 @@ function createTaskElement(task, index, isDone) {
     return div;
 }
 
+/**
+ * Converts a timestamp into a human-readable "time ago" string (e.g., "Today at 5:00 PM", "Yesterday at 10:00 AM").
+ * @param {number} timestamp - The timestamp to format.
+ * @returns {string} The formatted time ago string.
+ */
 function getTimeAgo(timestamp) {
     const date = new Date(timestamp);
     const now = new Date();
@@ -1129,6 +1352,10 @@ function getTimeAgo(timestamp) {
     return `${dateStr} at ${timeStr}`;
 }
 
+/**
+ * Renders the To-Do and Done task lists based on the active project's tasks.
+ * Tasks are sorted by their last updated time before rendering.
+ */
 function updateTaskLists() {
     if (!elements.todoList || !elements.doneList) return;
 
@@ -1157,6 +1384,12 @@ function updateTaskLists() {
     });
 }
 
+/**
+ * Opens the task details modal to either create a new task or edit an existing one.
+ * @param {object|null} [task=null] - The task object to edit. If null, the modal is for a new task.
+ * @param {number|null} [index=null] - The index of the task in its list.
+ * @param {boolean} [isDone=false] - Whether the task is from the "Done" list.
+ */
 function openTaskDetails(task = null, index = null, isDone = false) {
     currentTaskIndex = index;
     currentTaskList = isDone ? 'done' : 'todo';
@@ -1182,6 +1415,11 @@ function openTaskDetails(task = null, index = null, isDone = false) {
     setTimeout(() => elements.taskInput.focus(), 100);
 }
 
+/**
+ * Handles key presses within the task modal for shortcuts.
+ * Enter saves the task, Escape closes the modal.
+ * @param {KeyboardEvent} e - The keyboard event object.
+ */
 function handleTaskKeyPress(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -1192,6 +1430,10 @@ function handleTaskKeyPress(e) {
     }
 }
 
+/**
+ * Saves a task's details from the task modal.
+ * It either updates an existing task or creates a new one.
+ */
 function saveTask() {
     const title = elements.taskInput.value.trim();
     const description = elements.taskDescription.value.trim();
@@ -1214,6 +1456,9 @@ function saveTask() {
     closeTaskModal();
 }
 
+/**
+ * Deletes the currently selected task from the active project.
+ */
 function deleteTask() {
     if (currentTaskIndex === null) return;
     
@@ -1230,13 +1475,19 @@ function deleteTask() {
     closeTaskModal();
 }
 
+/**
+ * Closes the task details modal and resets its state.
+ */
 function closeTaskModal() {
     elements.taskModal.classList.remove('show');
     currentTaskIndex = null;
     currentTaskList = null;
 }
 
-// Drag and Drop handlers
+/**
+ * Handles the start of a drag event on a task item.
+ * @param {DragEvent} e - The drag event object.
+ */
 function handleDragStart(e) {
     e.target.classList.add('dragging');
     e.dataTransfer.setData('text/plain', JSON.stringify({
@@ -1245,6 +1496,10 @@ function handleDragStart(e) {
     }));
 }
 
+/**
+ * Handles the end of a drag event on a task item, cleaning up styles.
+ * @param {DragEvent} e - The drag event object.
+ */
 function handleDragEnd(e) {
     e.target.classList.remove('dragging');
     document.querySelectorAll('.task-list').forEach(list => {
@@ -1252,6 +1507,10 @@ function handleDragEnd(e) {
     });
 }
 
+/**
+ * Handles the drag-over event, adding a visual indicator to the target list.
+ * @param {DragEvent} e - The drag event object.
+ */
 function handleDragOver(e) {
     e.preventDefault();
     const taskList = e.target.closest('.task-list');
@@ -1260,6 +1519,10 @@ function handleDragOver(e) {
     }
 }
 
+/**
+ * Handles the drag-leave event, removing the visual indicator from the target list.
+ * @param {DragEvent} e - The drag event object.
+ */
 function handleDragLeave(e) {
     const taskList = e.target.closest('.task-list');
     if (taskList && !taskList.contains(e.relatedTarget)) {
@@ -1267,6 +1530,10 @@ function handleDragLeave(e) {
     }
 }
 
+/**
+ * Handles the drop event, moving the task from its source list to the target list.
+ * @param {DragEvent} e - The drag event object.
+ */
 function handleDrop(e) {
     e.preventDefault();
     const taskList = e.target.closest('.task-list');
@@ -1304,11 +1571,16 @@ function handleDrop(e) {
     }
 }
 
+/**
+ * Toggles the view between the "To-Do" and "Done" lists on mobile.
+ */
 function toggleListView() {
     elements.listsContainer.classList.toggle('show-done');
 }
 
-// Settings management
+/**
+ * Opens the settings modal and populates it with the active project's data.
+ */
 function openSettings() {
     const activeProject = projectManager.getActiveProject();
     if (activeProject) {
@@ -1332,10 +1604,18 @@ function openSettings() {
     elements.settingsModal.classList.add('show');
 }
 
+/**
+ * Closes the settings modal.
+ */
 function closeSettings() {
     elements.settingsModal.classList.remove('show');
 }
 
+/**
+ * Saves the settings from the settings modal.
+ * It updates the active project's goal and target date, or creates a new project if none is active.
+ * @async
+ */
 async function saveSettings() {
     const newGoal = elements.goalInput.value.trim();
     const newDate = elements.dateInput.value;
@@ -1376,6 +1656,12 @@ async function saveSettings() {
     }
 }
 
+/**
+ * Moves a task from one list to another (e.g., 'todo' to 'done').
+ * @param {HTMLElement} taskElement - The DOM element of the task to move.
+ * @param {('todo'|'done')} fromList - The name of the source list.
+ * @param {('todo'|'done')} toList - The name of the destination list.
+ */
 function moveTask(taskElement, fromList, toList) {
     const index = parseInt(taskElement.dataset.index);
     const activeProject = projectManager.getActiveProject();
@@ -1407,6 +1693,10 @@ function moveTask(taskElement, fromList, toList) {
     }
 }
 
+/**
+ * Sets up touch event listeners for handling task swipes on mobile devices.
+ * A swipe on a task moves it between the "To-Do" and "Done" lists.
+ */
 function setupMobileTaskHandling() {
     if (!window.matchMedia('(max-width: 768px)').matches) return;
 
@@ -1420,12 +1710,22 @@ function setupMobileTaskHandling() {
     const SWIPE_THRESHOLD = 50;
     const TAP_THRESHOLD = 500;
 
+    /**
+     * Handles the touchstart event on a task item.
+     * @param {TouchEvent} e - The touch event.
+     * @param {HTMLElement} taskElement - The task element being touched.
+     */
     function handleTouchStart(e, taskElement) {
         touchStartX = e.touches[0].clientX;
         touchStartTime = Date.now();
         taskElement.classList.add('being-moved');
     }
 
+    /**
+     * Handles the touchend event on a task item, determining if a swipe occurred.
+     * @param {TouchEvent} e - The touch event.
+     * @param {HTMLElement} taskElement - The task element being touched.
+     */
     function handleTouchEnd(e, taskElement) {
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndTime = Date.now();
@@ -1454,7 +1754,11 @@ function setupMobileTaskHandling() {
         }
     }
 
-    function handleTouchMove(e, taskElement) {
+    /**
+     * Handles the touchmove event to prevent scrolling while swiping.
+     * @param {TouchEvent} e - The touch event.
+     */
+    function handleTouchMove(e) {
         const touchCurrentX = e.touches[0].clientX;
         const swipeDistance = touchCurrentX - touchStartX;
         
@@ -1488,7 +1792,9 @@ function setupMobileTaskHandling() {
     });
 }
 
-// Setup event listeners
+/**
+ * Sets up all the initial event listeners for the application's interactive elements.
+ */
 function setupEventListeners() {
     // Project selector event listeners
     elements.projectDropdownBtn.addEventListener('click', toggleProjectDropdown);
@@ -1632,7 +1938,10 @@ function setupEventListeners() {
     }
 }
 
-// Activity Matrix Functions
+/**
+ * Main function to update the activity matrix display.
+ * It generates, renders, and updates the stats for the matrix.
+ */
 function updateActivityMatrix() {
     const activeProject = projectManager.getActiveProject();
     if (!elements.activityMatrix || !activeProject || !activeProject.goalCreatedAt) return;
@@ -1642,6 +1951,11 @@ function updateActivityMatrix() {
     updateActivityStats(matrix);
 }
 
+/**
+ * Generates the data structure for the activity matrix.
+ * @param {object} project - The project for which to generate the matrix.
+ * @returns {Array<object>} An array of day objects, each containing date, count, and level info.
+ */
 function generateActivityMatrix(project) {
     const startDate = getActivityStartDate(project);
     const matrix = [];
@@ -1700,6 +2014,11 @@ function generateActivityMatrix(project) {
     return matrix;
 }
 
+/**
+ * Determines the start date for the activity matrix, based on goal or task creation date.
+ * @param {object} project - The project object.
+ * @returns {Date} The calculated start date for the matrix.
+ */
 function getActivityStartDate(project) {
     // Start from the earliest task creation date or goal creation date
     let startDate = project.goalCreatedAt ? new Date(project.goalCreatedAt) : new Date();
@@ -1719,6 +2038,11 @@ function getActivityStartDate(project) {
     return startDate;
 }
 
+/**
+ * Formats a Date object into a "YYYY-MM-DD" string using local time.
+ * @param {Date} date - The date to format.
+ * @returns {string} The formatted date string.
+ */
 function formatDateToString(date) {
     // Use local time instead of UTC to avoid timezone issues
     const year = date.getFullYear();
@@ -1727,6 +2051,12 @@ function formatDateToString(date) {
     return `${year}-${month}-${day}`;
 }
 
+/**
+ * Counts the number of tasks completed on a specific date for a given project.
+ * @param {string} dateStr - The date string in "YYYY-MM-DD" format.
+ * @param {object} project - The project to check tasks from.
+ * @returns {number} The number of tasks completed on that date.
+ */
 function getTasksCompletedOnDate(dateStr, project) {
     return project.doneTasks.filter(task => {
         if (!task.completedAt) return false;
@@ -1735,6 +2065,12 @@ function getTasksCompletedOnDate(dateStr, project) {
     }).length;
 }
 
+/**
+ * Determines the activity level (0-4) based on the number of completed tasks.
+ * This is used for color-coding the matrix cells.
+ * @param {number} count - The number of completed tasks.
+ * @returns {number} The activity level.
+ */
 function getActivityLevel(count) {
     if (count === 0) return 0;
     if (count <= 2) return 1;
@@ -1743,6 +2079,10 @@ function getActivityLevel(count) {
     return 4;
 }
 
+/**
+ * Renders the activity matrix in the DOM based on the generated matrix data.
+ * @param {Array<object>} matrix - The matrix data generated by `generateActivityMatrix`.
+ */
 function renderActivityMatrix(matrix) {
     elements.activityMatrix.innerHTML = '';
     
@@ -1780,6 +2120,10 @@ function renderActivityMatrix(matrix) {
     });
 }
 
+/**
+ * Shows the tooltip for a specific day in the activity matrix on mouse hover.
+ * @param {MouseEvent} e - The mouse event.
+ */
 function showTooltip(e) {
     const dayElement = e.target;
     // Use the date string directly instead of converting to Date and back
@@ -1829,10 +2173,17 @@ function showTooltip(e) {
     moveTooltip(e);
 }
 
+/**
+ * Hides the activity matrix tooltip.
+ */
 function hideTooltip() {
     elements.activityTooltip.classList.remove('visible');
 }
 
+/**
+ * Moves the tooltip to follow the mouse cursor's position.
+ * @param {MouseEvent} e - The mouse event.
+ */
 function moveTooltip(e) {
     const tooltipRect = elements.activityTooltip.getBoundingClientRect();
     
@@ -1853,6 +2204,10 @@ function moveTooltip(e) {
     elements.activityTooltip.style.left = `${left}px`;
 }
 
+/**
+ * Updates the activity statistics summary text (total tasks, active days, streak).
+ * @param {Array<object>} matrix - The activity matrix data.
+ */
 function updateActivityStats(matrix) {
     if (!elements.activityStats) return;
     
@@ -1879,6 +2234,11 @@ function updateActivityStats(matrix) {
     elements.activityStats.textContent = statsText;
 }
 
+/**
+ * Calculates the current consecutive day streak of activity.
+ * @param {Array<object>} matrix - The activity matrix data.
+ * @returns {number} The number of days in the current streak.
+ */
 function getCurrentStreak(matrix) {
     let streak = 0;
     const today = new Date();
@@ -1919,7 +2279,9 @@ function getCurrentStreak(matrix) {
     return streak;
 }
 
-// Export data to JSON file
+/**
+ * Exports the entire application state to a JSON file and triggers a download.
+ */
 function exportData() {
     console.log('Exporting data...');
     console.log('Current state:', {
@@ -1959,7 +2321,12 @@ function exportData() {
     console.log('Export completed');
 }
 
-// Import data from JSON file
+/**
+ * Imports application state from a user-selected JSON file.
+ * It handles both the new multi-project format and the legacy single-project format.
+ * @param {File} file - The JSON file to import.
+ * @async
+ */
 async function importData(file) {
     try {
         const text = await file.text();
@@ -2107,7 +2474,10 @@ async function importData(file) {
     }
 }
 
-// Firecracker burst animation
+/**
+ * Triggers a celebratory confetti and spark burst animation.
+ * This is typically called when a user completes a task.
+ */
 function triggerConfetti() {
     const confettiContainer = document.createElement('div');
     confettiContainer.className = 'confetti-container';

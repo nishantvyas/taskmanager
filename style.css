@@ -1,3 +1,6 @@
+/* ------------------------- */
+/* --- GENERAL STYLES --- */
+/* ------------------------- */
 * {
     margin: 0;
     padding: 0;
@@ -23,6 +26,9 @@ body {
     flex-direction: column;
 }
 
+/* ------------------------- */
+/* --- LAYOUT & CONTAINER --- */
+/* ------------------------- */
 .container {
     width: 100%;
     max-width: 1200px;
@@ -40,6 +46,9 @@ body {
 }
 
 /* Project Controls Container */
+/* ------------------------- */
+/* --- PROJECT CONTROLS --- */
+/* ------------------------- */
 .project-controls {
     display: flex;
     align-items: center;
@@ -193,6 +202,9 @@ body {
     text-align: left;
 }
 
+/* ------------------------- */
+/* --- GOAL & COUNTDOWN --- */
+/* ------------------------- */
 .goal-header {
     display: flex;
     align-items: center;
@@ -249,6 +261,9 @@ body {
     overflow: hidden;
 }
 
+/* ------------------------- */
+/* --- TASK LISTS --- */
+/* ------------------------- */
 .lists-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -503,6 +518,9 @@ body {
     color: rgba(255, 255, 255, 0.7);
 }
 
+/* ------------------------- */
+/* --- MODALS & FORMS --- */
+/* ------------------------- */
 .modal {
     position: fixed;
     top: 0;
@@ -971,6 +989,9 @@ button:hover {
     right: 0.5rem;
 }
 
+/* ------------------------- */
+/* --- ANIMATIONS --- */
+/* ------------------------- */
 /* Firecracker Burst Animation */
 .confetti-container {
     position: fixed;
@@ -1078,7 +1099,9 @@ button:hover {
     border-radius: 50%;
 }
 
-/* Responsive styles */
+/* ------------------------- */
+/* --- RESPONSIVE & MOBILE --- */
+/* ------------------------- */
 @media (max-width: 768px) {
     .lists-container {
         display: flex;

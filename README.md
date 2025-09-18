@@ -8,22 +8,25 @@ A Chrome extension for managing your tasks and tracking goals with a countdown t
   - Visual countdown showing days, hours, minutes, and seconds to your target date
   - Clean, modern interface with responsive design
 
+- **Multi-Project Management**
+  - Create and manage multiple projects, each with its own goal, tasks, and color theme.
+  - Easily switch between projects via a dropdown menu.
+
 - **Task Management**
-  - To-Do and Done lists with drag-and-drop functionality
-  - Task descriptions and timestamps
-  - Mobile-friendly interface with swipe gestures
-  - Automatic task sorting by last updated time
+  - To-Do and Done lists with drag-and-drop functionality.
+  - Add detailed descriptions to your tasks.
+  - Mobile-friendly interface with swipe gestures to move tasks.
+  - Automatic task sorting by last updated time.
 
 - **Activity Tracking**
-  - GitHub-style activity matrix showing daily task completion
-  - Different color intensities based on number of tasks completed
-  - Interactive tooltips showing daily statistics
-  - Current streak tracking
+  - GitHub-style activity matrix showing daily task completion.
+  - Color-coded cells to reflect daily productivity.
+  - Interactive tooltips showing daily statistics.
+  - Current activity streak tracking.
 
-- **Data Persistence**
-  - All data stored in Chrome's sync storage
-  - Seamless synchronization across devices
-  - Automatic state management
+- **Data Persistence & Backup**
+  - All data is stored securely in Chrome's local storage, with a metadata backup to sync storage for cross-device consistency.
+  - Import and Export your data as a JSON file for easy backups and migration.
 
 ## Installation
 
@@ -59,12 +62,12 @@ A Chrome extension for managing your tasks and tracking goals with a countdown t
 
 ## Usage Guide
 
-1. After installation, click the extension icon in your Chrome toolbar
-2. Click the settings (⚙️) icon to set your goal and target date
-3. Use the "+" button to add new tasks
-4. Drag tasks between "To-Do" and "Done" lists (or swipe on mobile)
-5. Click any task to edit its details
-6. Watch your progress in the GitHub-style activity matrix!
+1.  **Set Your Goal**: After installation, click the extension icon. Click the main title or the settings (⚙️) icon to set your first project's goal and target date.
+2.  **Manage Projects**: Use the project name dropdown to switch between projects or to create new ones using the "+" button.
+3.  **Add Tasks**: Use the "+" button in the "To-Do" list header to add new tasks. Click any task to edit its title and add a description.
+4.  **Complete Tasks**: Drag tasks from "To-Do" to "Done". On mobile, simply swipe a task to move it.
+5.  **Track Progress**: Watch your daily progress fill up the activity matrix at the top. Hover over any day to see your stats.
+6.  **Backup Your Data**: In the settings (⚙️) menu, go to the "Global Settings" tab to export all your project data to a JSON file for backup. You can import this file later to restore your data.
 
 ## Development
 
