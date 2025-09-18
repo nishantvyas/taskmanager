@@ -176,7 +176,23 @@
             <div class="modal-buttons">
                 <button id="saveTaskBtn" class="button">Save</button>
                 <button id="deleteTaskBtn" class="button danger">Delete</button>
+                <button id="moveTaskBtn" class="button move" style="display: none;">Move</button>
                 <button id="closeTaskBtn" class="button secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Move Task Modal -->
+    <div id="moveTaskModal" class="modal">
+        <div class="modal-content">
+            <h2>Move Task to Project</h2>
+            <p>Select a project to move this task to:</p>
+            <div id="projectSelectionList" class="project-selection-list">
+                <!-- Projects will be populated here -->
+            </div>
+            <div class="modal-buttons">
+                <button id="confirmMoveBtn" class="button" disabled>Move Task</button>
+                <button id="cancelMoveBtn" class="button secondary">Cancel</button>
             </div>
         </div>
     </div>

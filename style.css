@@ -252,6 +252,58 @@ body {
     }
 }
 
+/* Project Selection Modal Styles */
+.project-selection-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 1rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.project-option {
+    padding: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.project-option:last-child {
+    border-bottom: none;
+}
+
+.project-option input[type="radio"] {
+    display: none;
+}
+
+.project-option label {
+    display: block;
+    padding: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 0;
+}
+
+.project-option label:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.project-option input[type="radio"]:checked + label {
+    background-color: rgba(76, 175, 80, 0.2);
+    border-left: 4px solid #4CAF50;
+}
+
+.project-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #ffffff;
+    margin-bottom: 0.25rem;
+}
+
+.project-info {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
 .main-content {
     background-color: rgba(255, 255, 255, 0.05);
     border-radius: 20px;
@@ -957,6 +1009,15 @@ button:hover {
 
 .button.danger:hover {
     background-color: #d32f2f;
+}
+
+.button.move {
+    background-color: #FF9800;
+    color: #ffffff !important;
+}
+
+.button.move:hover {
+    background-color: #F57C00;
 }
 
 /* Panel Navigation Buttons */

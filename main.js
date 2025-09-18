@@ -246,7 +246,12 @@ const elements = {
     taskDescription: document.getElementById('taskDescription'),
     saveTaskBtn: document.getElementById('saveTaskBtn'),
     deleteTaskBtn: document.getElementById('deleteTaskBtn'),
+    moveTaskBtn: document.getElementById('moveTaskBtn'),
     closeTaskBtn: document.getElementById('closeTaskBtn'),
+    moveTaskModal: document.getElementById('moveTaskModal'),
+    projectSelectionList: document.getElementById('projectSelectionList'),
+    confirmMoveBtn: document.getElementById('confirmMoveBtn'),
+    cancelMoveBtn: document.getElementById('cancelMoveBtn'),
     goalInput: document.getElementById('goalInput'),
     dateInput: document.getElementById('dateInput'),
     saveSettingsBtn: document.getElementById('saveSettingsBtn'),
@@ -1411,6 +1416,16 @@ function openTaskDetails(task = null, index = null, isDone = false) {
         }
     }
     
+    // Show/hide move button - only show for existing tasks when project is completed
+    const activeProject = projectManager.getActiveProject();
+    if (elements.moveTaskBtn) {
+        if (currentTaskIndex !== null && activeProject && activeProject.isCompleted) {
+            elements.moveTaskBtn.style.display = 'inline-block';
+        } else {
+            elements.moveTaskBtn.style.display = 'none';
+        }
+    }
+    
     elements.taskModal.classList.add('show');
     setTimeout(() => elements.taskInput.focus(), 100);
 }
@@ -1473,6 +1488,104 @@ function deleteTask() {
     saveState();
     updateUI();
     closeTaskModal();
+}
+
+/**
+ * Opens the move task modal and populates it with available projects.
+ */
+function openMoveTaskModal() {
+    const activeProject = projectManager.getActiveProject();
+    if (!activeProject || !activeProject.isCompleted) return;
+    
+    // Get all other active (non-completed) projects
+    const availableProjects = Object.values(state.projects).filter(project => 
+        project.id !== activeProject.id && !project.isCompleted && project.isActive
+    );
+    
+    if (availableProjects.length === 0) {
+        showNotification('No other active projects available to move this task to.', 'warning');
+        return;
+    }
+    
+    // Populate project selection list
+    elements.projectSelectionList.innerHTML = '';
+    availableProjects.forEach(project => {
+        const projectOption = document.createElement('div');
+        projectOption.className = 'project-option';
+        projectOption.innerHTML = `
+            <input type="radio" name="targetProject" value="${project.id}" id="project-${project.id}">
+            <label for="project-${project.id}">
+                <div class="project-name">${project.goal}</div>
+                <div class="project-info">${project.tasks.length} tasks • ${project.doneTasks.length} completed</div>
+            </label>
+        `;
+        elements.projectSelectionList.appendChild(projectOption);
+    });
+    
+    // Add event listeners to radio buttons
+    const radioButtons = elements.projectSelectionList.querySelectorAll('input[type="radio"]');
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', () => {
+            elements.confirmMoveBtn.disabled = false;
+        });
+    });
+    
+    // Reset confirm button
+    elements.confirmMoveBtn.disabled = true;
+    
+    // Show modal
+    elements.moveTaskModal.classList.add('show');
+}
+
+/**
+ * Moves the current task to the selected project.
+ */
+function moveTaskToProject() {
+    const selectedProject = elements.projectSelectionList.querySelector('input[name="targetProject"]:checked');
+    if (!selectedProject) return;
+    
+    const targetProjectId = selectedProject.value;
+    const activeProject = projectManager.getActiveProject();
+    
+    if (!activeProject || currentTaskIndex === null) return;
+    
+    // Get the task to move
+    const taskList = currentTaskList === 'done' ? activeProject.doneTasks : activeProject.tasks;
+    const taskToMove = taskList[currentTaskIndex];
+    
+    if (!taskToMove) return;
+    
+    // Remove task from current project
+    taskList.splice(currentTaskIndex, 1);
+    
+    // Add task to target project
+    const targetProject = projectManager.getProject(targetProjectId);
+    if (targetProject) {
+        if (currentTaskList === 'done') {
+            targetProject.doneTasks.push(taskToMove);
+        } else {
+            targetProject.tasks.push(taskToMove);
+        }
+        
+        // Update project timestamps
+        targetProject.updatedAt = new Date().toISOString();
+        activeProject.updatedAt = new Date().toISOString();
+        
+        saveState();
+        updateUI();
+        closeMoveTaskModal();
+        closeTaskModal();
+        
+        showNotification(`Task moved to "${targetProject.goal}" successfully!`, 'success');
+    }
+}
+
+/**
+ * Closes the move task modal.
+ */
+function closeMoveTaskModal() {
+    elements.moveTaskModal.classList.remove('show');
+    elements.confirmMoveBtn.disabled = true;
 }
 
 /**
@@ -1867,7 +1980,11 @@ function setupEventListeners() {
     elements.addTaskBtn.addEventListener('click', () => openTaskDetails());
     elements.saveTaskBtn.addEventListener('click', saveTask);
     elements.deleteTaskBtn.addEventListener('click', deleteTask);
+    elements.moveTaskBtn.addEventListener('click', openMoveTaskModal);
     elements.closeTaskBtn.addEventListener('click', closeTaskModal);
+    
+    elements.confirmMoveBtn.addEventListener('click', moveTaskToProject);
+    elements.cancelMoveBtn.addEventListener('click', closeMoveTaskModal);
     
     elements.settingsBtn.addEventListener('click', openSettings);
     elements.closeSettingsBtn.addEventListener('click', closeSettings);
