@@ -994,13 +994,22 @@ function updateCountdown() {
     const activeProject = projectManager.getActiveProject();
     if (!activeProject || !activeProject.targetDate) return;
 
-    // If project is completed, stop the countdown
+    const completionMessage = document.getElementById('completionMessage');
+    const countdownGrid = document.querySelector('.countdown-grid');
+    
+    // If project is completed, show completion message
     if (activeProject.isCompleted) {
-        elements.days.textContent = 'DONE';
-        elements.hours.textContent = '✓';
-        elements.minutes.textContent = '✓';
-        elements.seconds.textContent = '✓';
+        if (completionMessage && countdownGrid) {
+            completionMessage.style.display = 'block';
+            countdownGrid.style.display = 'none';
+        }
         return;
+    } else {
+        // Project is active, show countdown grid and hide completion message
+        if (completionMessage && countdownGrid) {
+            completionMessage.style.display = 'none';
+            countdownGrid.style.display = 'grid';
+        }
     }
 
     const now = new Date();

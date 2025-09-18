@@ -217,6 +217,29 @@ body {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.completion-message {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #4CAF50;
+    text-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+    margin-bottom: 1rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05));
+    border-radius: 15px;
+    border: 2px solid rgba(76, 175, 80, 0.3);
+    animation: completionGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes completionGlow {
+    0% {
+        box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+    }
+    100% {
+        box-shadow: 0 0 30px rgba(76, 175, 80, 0.6);
+    }
+}
+
 .main-content {
     background-color: rgba(255, 255, 255, 0.05);
     border-radius: 20px;
