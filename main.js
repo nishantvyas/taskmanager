@@ -93,6 +93,7 @@ class ProjectManager {
      * @param {string} [projectData.goal] - The name or goal of the project.
      * @param {Date} [projectData.targetDate] - The target completion date for the project.
      * @param {Date} [projectData.goalCreatedAt] - The creation date of the project goal.
+     * @param {Date} [projectData.startDate] - The start date for progress tracking.
      * @param {Array} [projectData.tasks] - The list of to-do tasks.
      * @param {Array} [projectData.doneTasks] - The list of completed tasks.
      * @param {string} [projectData.color] - The hex color code for the project theme.
@@ -101,11 +102,13 @@ class ProjectManager {
      */
     async createProject(projectData) {
         const projectId = this.generateProjectId();
+        const createdAt = projectData.goalCreatedAt || new Date();
         const newProject = {
             id: projectId,
             goal: projectData.goal || 'New Project',
             targetDate: projectData.targetDate || null,
-            goalCreatedAt: projectData.goalCreatedAt || new Date(),
+            goalCreatedAt: createdAt,
+            startDate: projectData.startDate || createdAt, // Default to goalCreatedAt for backwards compatibility
             tasks: projectData.tasks || [],
             doneTasks: projectData.doneTasks || [],
             color: projectData.color || this.state.globalSettings.defaultProjectColor,
@@ -253,6 +256,7 @@ const elements = {
     confirmMoveBtn: document.getElementById('confirmMoveBtn'),
     cancelMoveBtn: document.getElementById('cancelMoveBtn'),
     goalInput: document.getElementById('goalInput'),
+    startDateInput: document.getElementById('startDateInput'),
     dateInput: document.getElementById('dateInput'),
     saveSettingsBtn: document.getElementById('saveSettingsBtn'),
     closeSettingsBtn: document.getElementById('closeSettingsBtn'),
@@ -484,6 +488,15 @@ async function loadState() {
                 console.log('Corrupted projects_data:', multiProjectData.projects_data);
                 throw parseError;
             }
+            
+            // Add startDate for backwards compatibility to existing projects
+            Object.keys(state.projects).forEach(projectId => {
+                const project = state.projects[projectId];
+                if (!project.startDate && project.goalCreatedAt) {
+                    project.startDate = new Date(project.goalCreatedAt);
+                    console.log(`Added startDate to project ${projectId}: ${project.startDate}`);
+                }
+            });
             
             // Merge default global settings
             state.globalSettings = {
@@ -746,18 +759,36 @@ function updateProjectTheme() {
 /**
  * Updates the project selector dropdown with the list of all active projects.
  * It highlights the currently active project and updates the document title.
+ * Completed projects are hidden from the dropdown but remain visible in the "All Projects" modal.
  */
 function updateProjectSelector() {
     const activeProject = projectManager.getActiveProject();
-    const allProjects = projectManager.getActiveProjects();
+    // Filter out completed projects from the dropdown
+    const allProjects = projectManager.getActiveProjects().filter(project => !project.isCompleted);
     
-    // Update current project name
-    if (activeProject) {
+    // Update current project name - ensure completed projects don't show as active
+    if (activeProject && !activeProject.isCompleted) {
         elements.currentProjectName.textContent = activeProject.goal || 'Untitled Project';
         document.title = `Launch Extension - ${activeProject.goal}`;
     } else {
-        elements.currentProjectName.textContent = 'No Project Selected';
+        // If active project is completed or no project exists, show appropriate message
+        const totalProjects = projectManager.getAllProjects().length;
+        const completedProjects = projectManager.getAllProjects().filter(p => p.isCompleted).length;
+        
+        if (totalProjects === 0) {
+            elements.currentProjectName.textContent = 'No Projects';
+        } else if (completedProjects === totalProjects) {
+            elements.currentProjectName.textContent = 'All Projects Complete! 🎉';
+        } else {
+            elements.currentProjectName.textContent = 'No Active Project';
+        }
         document.title = 'Launch Extension';
+        
+        // If somehow we have a completed project as active, clear it
+        if (activeProject && activeProject.isCompleted) {
+            state.activeProjectId = null;
+            saveState();
+        }
     }
     
     // Update project list
@@ -787,9 +818,21 @@ function updateProjectSelector() {
         if (allProjects.length === 0) {
             const emptyState = document.createElement('div');
             emptyState.className = 'project-empty-state';
+            const totalProjects = projectManager.getAllProjects().length;
+            const completedProjects = projectManager.getAllProjects().filter(p => p.isCompleted).length;
+            
+            let emptyMessage;
+            if (totalProjects === 0) {
+                emptyMessage = 'No projects yet. Click + to create one!';
+            } else if (completedProjects === totalProjects) {
+                emptyMessage = 'All projects completed! 🎉<br>Click + to create a new one!';
+            } else {
+                emptyMessage = 'No active projects. Click + to create one!';
+            }
+            
             emptyState.innerHTML = `
                 <div style="padding: 1rem; text-align: center; color: rgba(255, 255, 255, 0.6);">
-                    No projects yet. Click + to create one!
+                    ${emptyMessage}
                 </div>
             `;
             elements.projectList.appendChild(emptyState);
@@ -806,7 +849,12 @@ async function switchToProject(projectId) {
     await projectManager.setActiveProject(projectId);
     updateUI(); // This will apply the switched project's color theme
     updateAllProjectsList(); // Refresh the projects list to show new active state
-    updateToggleCompleteButton(); // Update the completion button state
+    
+    // If settings modal is open, refresh the Current Project tab
+    if (elements.settingsModal && elements.settingsModal.classList.contains('show')) {
+        updateCurrentProjectTab();
+    }
+    
     closeProjectDropdown();
 }
 
@@ -882,6 +930,13 @@ async function handleCreateProject() {
         // Switch to the new project
         await projectManager.setActiveProject(newProject.id);
         updateUI(); // This will apply the new project's color theme
+        
+        // If settings modal is open, refresh the Current Project tab
+        if (elements.settingsModal && elements.settingsModal.classList.contains('show')) {
+            updateCurrentProjectTab();
+            updateAllProjectsList(); // Also refresh the projects list
+        }
+        
         closeProjectDropdown();
         hideModal('createProjectModal');
         
@@ -907,6 +962,11 @@ function switchSettingsTab(tabName) {
     
     if (selectedTab) selectedTab.classList.add('active');
     if (selectedContent) selectedContent.classList.add('active');
+    
+    // Refresh Current Project tab when switching to it
+    if (tabName === 'current') {
+        updateCurrentProjectTab();
+    }
 }
 
 /**
@@ -1692,24 +1752,60 @@ function toggleListView() {
 }
 
 /**
- * Opens the settings modal and populates it with the active project's data.
+ * Updates the Current Project tab in the settings modal with the active project's data.
  */
-function openSettings() {
+function updateCurrentProjectTab() {
     const activeProject = projectManager.getActiveProject();
+    
+    // Clear all fields first
+    if (elements.goalInput) elements.goalInput.value = '';
+    if (elements.startDateInput) elements.startDateInput.value = '';
+    if (elements.dateInput) elements.dateInput.value = '';
+    if (elements.projectColorInput) elements.projectColorInput.value = '#4CAF50';
+    if (elements.startDateInput) elements.startDateInput.disabled = false;
+    
     if (activeProject) {
-        if (activeProject.goal) {
+        // Populate goal field
+        if (activeProject.goal && elements.goalInput) {
             elements.goalInput.value = activeProject.goal;
             updateGoalCounter(); // Update counter when setting value
         }
-        if (activeProject.targetDate) elements.dateInput.value = new Date(activeProject.targetDate).toISOString().slice(0, 16);
-        if (elements.projectColorInput) elements.projectColorInput.value = activeProject.color || '#4CAF50';
+        
+        // Set start date (backwards compatibility: use goalCreatedAt if startDate doesn't exist)
+        const startDate = activeProject.startDate || activeProject.goalCreatedAt;
+        if (startDate && elements.startDateInput) {
+            elements.startDateInput.value = new Date(startDate).toISOString().slice(0, 10);
+        }
+        
+        // Set target date
+        if (activeProject.targetDate && elements.dateInput) {
+            elements.dateInput.value = new Date(activeProject.targetDate).toISOString().slice(0, 16);
+        }
+        
+        // Set project color
+        if (elements.projectColorInput) {
+            elements.projectColorInput.value = activeProject.color || '#4CAF50';
+        }
+        
+        // Disable start date input for completed projects
+        if (elements.startDateInput) {
+            elements.startDateInput.disabled = activeProject.isCompleted;
+        }
     }
-    
-    // Populate all projects tab
-    updateAllProjectsList();
     
     // Update the toggle complete button
     updateToggleCompleteButton();
+}
+
+/**
+ * Opens the settings modal and populates it with the active project's data.
+ */
+function openSettings() {
+    // Update current project tab
+    updateCurrentProjectTab();
+    
+    // Populate all projects tab
+    updateAllProjectsList();
     
     // Make sure Current Project tab is active
     switchSettingsTab('current');
@@ -1726,11 +1822,12 @@ function closeSettings() {
 
 /**
  * Saves the settings from the settings modal.
- * It updates the active project's goal and target date, or creates a new project if none is active.
+ * It updates the active project's goal, start date, and target date, or creates a new project if none is active.
  * @async
  */
 async function saveSettings() {
     const newGoal = elements.goalInput.value.trim();
+    const newStartDate = elements.startDateInput.value;
     const newDate = elements.dateInput.value;
 
     if (newGoal && newDate) {
@@ -1744,10 +1841,12 @@ async function saveSettings() {
         
         // If no active project exists, create one
         if (!activeProject) {
+            const startDate = newStartDate ? new Date(newStartDate) : new Date();
             activeProject = await projectManager.createProject({
                 goal: newGoal,
                 targetDate: new Date(newDate),
-                goalCreatedAt: new Date()
+                goalCreatedAt: new Date(),
+                startDate: startDate
             });
         } else {
             // Update existing project
@@ -1756,7 +1855,12 @@ async function saveSettings() {
                 targetDate: new Date(newDate)
             };
             
-        // Set goal creation date if this is a new goal
+            // Only update start date for active (non-completed) projects
+            if (!activeProject.isCompleted && newStartDate) {
+                updates.startDate = new Date(newStartDate);
+            }
+            
+            // Set goal creation date if this is a new goal
             if (!activeProject.goal || activeProject.goal !== newGoal) {
                 updates.goalCreatedAt = new Date();
             }
@@ -2061,7 +2165,9 @@ function setupEventListeners() {
  */
 function updateActivityMatrix() {
     const activeProject = projectManager.getActiveProject();
-    if (!elements.activityMatrix || !activeProject || !activeProject.goalCreatedAt) return;
+    // Check for startDate or fall back to goalCreatedAt for backwards compatibility
+    const hasValidStartDate = activeProject && (activeProject.startDate || activeProject.goalCreatedAt);
+    if (!elements.activityMatrix || !activeProject || !hasValidStartDate) return;
     
     const matrix = generateActivityMatrix(activeProject);
     renderActivityMatrix(matrix);
@@ -2077,8 +2183,9 @@ function generateActivityMatrix(project) {
     const startDate = getActivityStartDate(project);
     const matrix = [];
     
-    // If no goal is set, return empty matrix
-    if (!project || !project.goalCreatedAt || !project.targetDate) {
+    // If no start date or target date is set, return empty matrix
+    const hasValidStartDate = project.startDate || project.goalCreatedAt;
+    if (!project || !hasValidStartDate || !project.targetDate) {
         return matrix;
     }
     
@@ -2132,23 +2239,14 @@ function generateActivityMatrix(project) {
 }
 
 /**
- * Determines the start date for the activity matrix, based on goal or task creation date.
+ * Determines the start date for the activity matrix, based on startDate or goal creation date.
  * @param {object} project - The project object.
  * @returns {Date} The calculated start date for the matrix.
  */
 function getActivityStartDate(project) {
-    // Start from the earliest task creation date or goal creation date
-    let startDate = project.goalCreatedAt ? new Date(project.goalCreatedAt) : new Date();
-    
-    // Check for earliest task creation
-    const allTasks = [...project.tasks, ...project.doneTasks];
-    if (allTasks.length > 0) {
-        const earliestTask = Math.min(...allTasks.map(task => task.createdAt || Date.now()));
-        const earliestTaskDate = new Date(earliestTask);
-        if (earliestTaskDate < startDate) {
-            startDate = earliestTaskDate;
-        }
-    }
+    // Use startDate if available, otherwise fall back to goalCreatedAt for backwards compatibility
+    let startDate = project.startDate ? new Date(project.startDate) : 
+                   project.goalCreatedAt ? new Date(project.goalCreatedAt) : new Date();
     
     // Start from beginning of that day
     startDate.setHours(0, 0, 0, 0);
@@ -2471,10 +2569,15 @@ async function importData(file) {
                 if (project.goalCreatedAt && typeof project.goalCreatedAt === 'string') {
                     project.goalCreatedAt = new Date(project.goalCreatedAt);
                 }
+                // Add startDate for backwards compatibility if it doesn't exist
+                if (!project.startDate && project.goalCreatedAt) {
+                    project.startDate = new Date(project.goalCreatedAt);
+                }
                 console.log(`Fixed dates for project ${projectId}:`, {
                     goal: project.goal,
                     targetDate: project.targetDate,
-                    goalCreatedAt: project.goalCreatedAt
+                    goalCreatedAt: project.goalCreatedAt,
+                    startDate: project.startDate
                 });
             });
             
@@ -2666,6 +2769,27 @@ function triggerConfetti() {
     }, 3000);
 }
 
+/**
+ * Switches to the next available non-completed project when the current one is completed.
+ * If no non-completed projects exist, sets activeProjectId to null.
+ * @async
+ */
+async function switchToNextAvailableProject() {
+    const allProjects = projectManager.getAllProjects();
+    const availableProjects = allProjects.filter(project => !project.isCompleted);
+    
+    if (availableProjects.length > 0) {
+        // Switch to the first available non-completed project
+        await projectManager.setActiveProject(availableProjects[0].id);
+        showNotification(`Switched to "${availableProjects[0].goal}" 📋`, 'info');
+    } else {
+        // No active projects available, set to null
+        state.activeProjectId = null;
+        await saveState();
+        showNotification('No active projects remaining. Create a new one! ➕', 'info');
+    }
+}
+
 // Project completion management
 async function toggleProjectComplete() {
     const activeProject = projectManager.getActiveProject();
@@ -2684,6 +2808,9 @@ async function toggleProjectComplete() {
         if (newStatus) {
             triggerFireworks();
             showNotification('Project completed! 🎉', 'success');
+            
+            // When completing a project, automatically switch to another non-completed project
+            await switchToNextAvailableProject();
         } else {
             showNotification('Project resumed! 🚀', 'success');
         }
